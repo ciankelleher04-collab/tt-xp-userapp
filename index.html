@@ -165,6 +165,39 @@
             color: #ffd29b;
         }
 
+
+        .tab.active[data-page="loader"] {
+            background: linear-gradient(180deg, #318b59, #21643f);
+            border-color: #43a86e;
+            color: #d8ffe8;
+        }
+
+        .loader-workspace {
+            display: none;
+            flex: 1;
+            min-height: 0;
+            overflow: auto;
+        }
+
+        .loader-workspace.active {
+            display: block;
+        }
+
+        .loader-page-panel {
+            min-height: 100%;
+            margin-bottom: 0;
+        }
+
+        .loader-inner {
+            margin-top: 12px;
+        }
+
+        .loader-stock-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+        }
+
         .workspace {
             flex: 1;
             min-height: 0;
@@ -581,9 +614,10 @@
             <div class="tabs">
                 <button class="tab active" data-mode="fish">🐟 Fishing</button>
                 <button class="tab" data-mode="bear">🐻 Hunting (Bears)</button>
+                <button class="tab" data-page="loader">🚛 Truck Loader</button>
             </div>
 
-            <div class="workspace">
+            <div class="workspace" id="calcWorkspace">
                 <div class="column">
                     <div class="panel">
                         <div class="panel-title">Automatic (from TT)</div>
@@ -672,8 +706,85 @@
                         <button id="resetBtn" class="secondary">↻ Reset</button>
                     </div>
 
-                    <div class="panel" style="margin-top: 10px;">
-                        <div class="panel-title">Storage Auto Loader</div>
+                    
+
+                </div>
+
+                <div class="column">
+                    <div class="panel results-panel">
+                        <div class="panel-title">Results</div>
+
+                        <div class="results-grid">
+                            <div class="result-card">
+                                <span class="result-label">Target XP</span>
+                                <div class="result-value" id="targetResult">1,000,000</div>
+                            </div>
+
+                            <div class="result-card">
+                                <span class="result-label">Current XP</span>
+                                <div class="result-value blue" id="currentResult">0</div>
+                            </div>
+
+                            <div class="result-card">
+                                <span class="result-label">XP Remaining</span>
+                                <div class="result-value purple" id="xpRemaining">0</div>
+                            </div>
+
+                            <div class="result-card">
+                                <span class="result-label" id="totalResourceLabel">Total Fish Needed</span>
+                                <div class="result-value blue" id="totalResource">0</div>
+                                <div class="result-sub" id="resourceSub"></div>
+                            </div>
+
+                            <div class="result-card">
+                                <span class="result-label" id="stillNeededLabel">Fish Still Needed</span>
+                                <div class="result-value green" id="stillNeeded">0</div>
+                                <div class="result-sub">After your current stock.</div>
+                            </div>
+
+                            <div class="result-card">
+                                <span class="result-label">BXP Available</span>
+                                <div class="result-value orange" id="bxpResult">0</div>
+                            </div>
+
+                            <div class="result-card">
+                                <span class="result-label">Total BXP Needed</span>
+                                <div class="result-value yellow" id="totalBxp">0</div>
+                                <div class="result-sub">If using BXP for the full remaining grind.</div>
+                            </div>
+
+                            <div class="result-card">
+                                <span class="result-label">BXP Still Needed</span>
+                                <div class="result-value red" id="bxpNeeded">0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="loader-workspace" id="loaderWorkspace">
+                <div class="panel loader-page-panel">
+                    <div class="panel-title">Storage Auto Loader</div>
+
+                    <div class="loader-stock-grid">
+                        <div class="auto-card">
+                            <span class="auto-label" id="loaderItemLabel">Selected Item</span>
+                            <div class="auto-value" id="loaderItemValue">Fish Meat</div>
+                        </div>
+
+                        <div class="auto-card">
+                            <span class="auto-label">Detected in Scanned Storages</span>
+                            <div class="auto-value" id="loaderStockValue">0</div>
+                        </div>
+
+                        <div class="auto-card">
+                            <span class="auto-label">Calculator Still Needs</span>
+                            <div class="auto-value" id="loaderNeededValue">0</div>
+                        </div>
+                    </div>
+
+<div class="loader-inner">
+                        
 
                         <div class="loader-grid">
                             <div class="field">
@@ -735,60 +846,9 @@
                             Keybind trigger: <strong>userapp_trigger ttload</strong>. Arm it, then open the storage containing the selected meat.
                         </div>
                     </div>
-
-                </div>
-
-                <div class="column">
-                    <div class="panel results-panel">
-                        <div class="panel-title">Results</div>
-
-                        <div class="results-grid">
-                            <div class="result-card">
-                                <span class="result-label">Target XP</span>
-                                <div class="result-value" id="targetResult">1,000,000</div>
-                            </div>
-
-                            <div class="result-card">
-                                <span class="result-label">Current XP</span>
-                                <div class="result-value blue" id="currentResult">0</div>
-                            </div>
-
-                            <div class="result-card">
-                                <span class="result-label">XP Remaining</span>
-                                <div class="result-value purple" id="xpRemaining">0</div>
-                            </div>
-
-                            <div class="result-card">
-                                <span class="result-label" id="totalResourceLabel">Total Fish Needed</span>
-                                <div class="result-value blue" id="totalResource">0</div>
-                                <div class="result-sub" id="resourceSub"></div>
-                            </div>
-
-                            <div class="result-card">
-                                <span class="result-label" id="stillNeededLabel">Fish Still Needed</span>
-                                <div class="result-value green" id="stillNeeded">0</div>
-                                <div class="result-sub">After your current stock.</div>
-                            </div>
-
-                            <div class="result-card">
-                                <span class="result-label">BXP Available</span>
-                                <div class="result-value orange" id="bxpResult">0</div>
-                            </div>
-
-                            <div class="result-card">
-                                <span class="result-label">Total BXP Needed</span>
-                                <div class="result-value yellow" id="totalBxp">0</div>
-                                <div class="result-sub">If using BXP for the full remaining grind.</div>
-                            </div>
-
-                            <div class="result-card">
-                                <span class="result-label">BXP Still Needed</span>
-                                <div class="result-value red" id="bxpNeeded">0</div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
+
         </div>
 
         <div id="footer">
@@ -808,6 +868,8 @@
         const app = document.getElementById("app");
         const titlebar = document.getElementById("titlebar");
         const resizeHandle = document.getElementById("resizeHandle");
+        const calcWorkspace = document.getElementById("calcWorkspace");
+        const loaderWorkspace = document.getElementById("loaderWorkspace");
 
         const target = document.getElementById("target");
         const baseXp = document.getElementById("baseXp");
@@ -836,6 +898,10 @@
         const premium = document.getElementById("premium");
         const farmersMilk = document.getElementById("farmersMilk");
         const loaderSummary = document.getElementById("loaderSummary");
+        const loaderItemLabel = document.getElementById("loaderItemLabel");
+        const loaderItemValue = document.getElementById("loaderItemValue");
+        const loaderStockValue = document.getElementById("loaderStockValue");
+        const loaderNeededValue = document.getElementById("loaderNeededValue");
         const loaderStatus = document.getElementById("loaderStatus");
         const armLoaderBtn = document.getElementById("armLoaderBtn");
 
@@ -1142,6 +1208,9 @@
             const total = detectedStock();
 
             detectedStockDisplay.textContent = fmt(total, 0);
+            if (loaderStockValue) loaderStockValue.textContent = fmt(total, 0);
+            if (loaderItemValue) loaderItemValue.textContent = state.mode === "fish" ? "Fish Meat" : "Brown Bears";
+            if (loaderItemLabel) loaderItemLabel.textContent = state.mode === "fish" ? "Selected Item" : "Selected Item";
             storageCount.textContent = count
                 ? `${count} storage${count === 1 ? "" : "s"} scanned this session.`
                 : "Open a storage to scan it.";
@@ -1515,6 +1584,8 @@
 
         function applyMode(mode) {
             state.mode = mode;
+            calcWorkspace.style.display = "grid";
+            loaderWorkspace.classList.remove("active");
 
             document.querySelectorAll(".tab").forEach(tab => {
                 tab.classList.toggle("active", tab.dataset.mode === mode);
@@ -1540,6 +1611,19 @@
             updateLoaderSummary();
             updateXpSources();
 
+            recalc();
+        }
+
+        function showLoaderTab() {
+            calcWorkspace.style.display = "none";
+            loaderWorkspace.classList.add("active");
+
+            document.querySelectorAll(".tab").forEach(tab => {
+                tab.classList.toggle("active", tab.dataset.page === "loader");
+            });
+
+            updateStorageDisplay();
+            updateLoaderSummary();
             recalc();
         }
 
@@ -1622,7 +1706,14 @@
         });
 
         document.querySelectorAll(".tab").forEach(tab => {
-            tab.addEventListener("click", () => applyMode(tab.dataset.mode));
+            tab.addEventListener("click", () => {
+                if (tab.dataset.page === "loader") {
+                    showLoaderTab();
+                    return;
+                }
+
+                applyMode(tab.dataset.mode);
+            });
         });
 
         toggle.addEventListener("click", () => {
