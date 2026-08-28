@@ -1972,7 +1972,10 @@
                 parseIdentityExperience(state.cache.menu_choices);
             }
             if ("prompt" in data) state.cache.prompt = !!data.prompt;
-            if ("chest" in data) state.cache.chest = data.chest;
+            if ("chest" in data) {
+                // Generic chest is an open/close signal, not a storage snapshot.
+                state.cache.chest = data.chest;
+            }
 
             if ("trigger_ttload" in data && data.trigger_ttload !== state.lastTrigger) {
                 state.lastTrigger = data.trigger_ttload;
@@ -1985,6 +1988,10 @@
                 const chestId = key.slice(6);
                 const parsed = parseChest(value);
 
+                if (!parsed || typeof parsed !== "object") continue;
+
+                // Same chestId = same logical storage. Replace its old snapshot
+                // so reopening a storage refreshes the amount instead of duplicating it.
                 state.scannedStorages[chestId] = parsed;
                 updateStorageDisplay();
                 recalc();
