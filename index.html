@@ -583,11 +583,6 @@
                             </div>
                         </div>
                     </div>
-
-                    <div class="panel">
-                        <div class="panel-title">Calculation Details</div>
-                        <ul class="details" id="detailsList"></ul>
-                    </div>
                 </div>
             </div>
         </div>
@@ -599,7 +594,7 @@
             </div>
 
             <span id="lastUpdated">Not updated yet</span>
-            <span>Created by CianK | TT Tools</span>
+            <span>Created by Cian | TT Tools</span>
         </div>
 
         <div id="resizeHandle"></div>
@@ -633,7 +628,6 @@
         const bxpResult = document.getElementById("bxpResult");
         const totalBxpEl = document.getElementById("totalBxp");
         const bxpNeededEl = document.getElementById("bxpNeeded");
-        const detailsList = document.getElementById("detailsList");
 
         const stockLabel = document.getElementById("stockLabel");
         const stockHint = document.getElementById("stockHint");
@@ -825,25 +819,6 @@
                 warning.style.display = "none";
             }
 
-            updateDetails();
-        }
-
-        function updateDetails() {
-            if (state.mode === "fish") {
-                detailsList.innerHTML = `
-                    <li>Fish are sold in batches of 10,000</li>
-                    <li>Base XP per sale: 50 XP</li>
-                    <li>BXP per sale: 500 BXP</li>
-                    <li>BXP doubles the XP gained per sale</li>
-                `;
-            } else {
-                detailsList.innerHTML = `
-                    <li>Base XP per bear: 6 XP</li>
-                    <li>BXP per bear: 60 BXP</li>
-                    <li>BXP doubles the XP gained per bear</li>
-                    <li>Your current bear stock is deducted from the total required</li>
-                `;
-            }
         }
 
         function applyMode(mode) {
