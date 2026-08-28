@@ -1417,6 +1417,19 @@
             return String(value ?? "").replace(/(<.+?>)|(&#.+?;)/g, "").trim();
         }
 
+
+        function shouldTrackChest(chestId) {
+            const match = String(chestId || "").match(/^self_storage:(\d+):/i);
+
+            if (!match) return true;
+
+            const currentUserId = String(state.cache.user_id ?? "").trim();
+
+            if (!currentUserId) return true;
+
+            return match[1] === currentUserId;
+        }
+
         function parseChest(raw) {
             if (raw && typeof raw === "object") return raw;
 
@@ -1931,6 +1944,7 @@
             send({
                 type: "getNamedData",
                 keys: [
+                    "user_id",
                     "inventory",
                     "exp_hunting_skill",
                     "exp_farming_fishing",
@@ -1952,6 +1966,10 @@
             }
 
             const data = evt.data;
+
+            if ("user_id" in data) {
+                state.cache.user_id = data.user_id;
+            }
 
             if ("inventory" in data) {
                 state.inventory = parseInventory(data.inventory);
@@ -1989,6 +2007,13 @@
                 const parsed = parseChest(value);
 
                 if (!parsed || typeof parsed !== "object") continue;
+
+                if (!shouldTrackChest(chestId)) {
+                    delete state.scannedStorages[chestId];
+                    updateStorageDisplay();
+                    recalc();
+                    continue;
+                }
 
                 // Same chestId = same logical storage. Replace its old snapshot
                 // so reopening a storage refreshes the amount instead of duplicating it.
