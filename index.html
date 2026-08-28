@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TT XP Data Test</title>
+    <title>TT XP Probe</title>
     <style>
         :root {
             --bg: #121419;
@@ -11,7 +11,6 @@
             --border: #303540;
             --text: #f2f4f7;
             --muted: #9299a6;
-            --accent: #4f9cff;
             --good: #68d391;
         }
 
@@ -28,11 +27,11 @@
 
         #app {
             position: fixed;
-            top: 50px;
-            left: 50px;
+            top: 45px;
+            left: 45px;
             width: 760px;
-            max-width: calc(100vw - 100px);
-            max-height: calc(100vh - 100px);
+            max-width: calc(100vw - 90px);
+            max-height: calc(100vh - 90px);
             display: flex;
             flex-direction: column;
             background: var(--bg);
@@ -46,6 +45,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            gap: 12px;
             padding: 10px 12px;
             background: var(--panel);
             border-bottom: 1px solid var(--border);
@@ -69,6 +69,7 @@
         .buttons {
             display: flex;
             gap: 8px;
+            flex-wrap: wrap;
         }
 
         button {
@@ -91,9 +92,18 @@
         }
 
         .note {
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             color: var(--muted);
             font-size: 12px;
+        }
+
+        .section {
+            margin-bottom: 18px;
+        }
+
+        .section h3 {
+            margin: 0 0 8px;
+            font-size: 14px;
         }
 
         table {
@@ -111,18 +121,14 @@
         }
 
         th {
-            position: sticky;
-            top: 0;
-            background: var(--bg);
             color: var(--muted);
             font-size: 12px;
             text-transform: uppercase;
-            z-index: 1;
         }
 
         th:first-child,
         td:first-child {
-            width: 34%;
+            width: 46%;
         }
 
         td {
@@ -132,40 +138,9 @@
             white-space: pre-wrap;
         }
 
-        .missing {
+        .missing,
+        .empty {
             color: var(--muted);
-        }
-
-        .inventory-box {
-            max-height: 240px;
-            overflow: auto;
-            padding: 6px;
-            background: #0d0f13;
-            border: 1px solid #252a33;
-            border-radius: 4px;
-            white-space: pre-wrap;
-            user-select: text;
-        }
-
-        .inventory-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 8px;
-        }
-
-        #copyArea {
-            position: fixed;
-            left: -9999px;
-            top: -9999px;
-            width: 1px;
-            height: 1px;
-            opacity: 0;
-        }
-
-        #copyStatus {
-            color: var(--muted);
-            font-size: 12px;
-            align-self: center;
         }
 
         footer {
@@ -176,18 +151,28 @@
             font-size: 12px;
             flex-shrink: 0;
         }
+
+        #copyArea {
+            position: fixed;
+            left: -9999px;
+            top: -9999px;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+        }
     </style>
 </head>
 <body>
     <div id="app">
         <header>
             <div>
-                <span class="title">TT XP Data Test</span>
+                <span class="title">TT XP Probe</span>
                 <span id="status">Waiting for data...</span>
             </div>
 
             <div class="buttons">
                 <button id="refreshBtn">Refresh</button>
+                <button id="copyBtn">Copy Results</button>
                 <button id="pinBtn">Pin</button>
                 <button id="closeBtn">Close</button>
             </div>
@@ -195,22 +180,38 @@
 
         <main>
             <div class="note">
-                Only the values needed for the XP calculator are requested.
+                This version only shows XP values and inventory entries that look relevant to the calculator.
             </div>
 
-            <table>
-                <thead>
-                    <tr>
-                        <th>Key</th>
-                        <th>Value</th>
-                    </tr>
-                </thead>
-                <tbody id="rows"></tbody>
-            </table>
+            <div class="section">
+                <h3>Player / XP</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Key</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="xpRows"></tbody>
+                </table>
+            </div>
+
+            <div class="section">
+                <h3>Matching Inventory Entries</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventoryRows"></tbody>
+                </table>
+            </div>
         </main>
 
-        <footer>
-            Inventory has its own scroll area and copy button.
+        <footer id="footerText">
+            Looking for BXP, XP bonuses, boosts, fishing, hunting, fish and bear related items.
         </footer>
     </div>
 
@@ -219,48 +220,168 @@
     <script>
         const wantedKeys = [
             "user_id",
-            "pkey",
             "inventory",
             "exp_hunting_skill",
             "exp_farming_fishing"
         ];
 
+        const inventoryTerms = [
+            "exp_token",
+            "exp_bonus",
+            "boost",
+            "fish",
+            "fishing",
+            "hunt",
+            "hunting",
+            "bear"
+        ];
+
         const values = {};
-        const rows = document.getElementById("rows");
+        const xpRows = document.getElementById("xpRows");
+        const inventoryRows = document.getElementById("inventoryRows");
         const status = document.getElementById("status");
+        const footerText = document.getElementById("footerText");
         const copyArea = document.getElementById("copyArea");
 
         function send(payload) {
             window.parent.postMessage(payload, "*");
         }
 
-        function prettyValue(value) {
-            if (value === undefined) return "Not received";
-            if (value === null) return "null";
+        function parseInventory(raw) {
+            if (!raw) return {};
 
-            if (typeof value === "object") {
+            if (typeof raw === "object") {
+                return raw;
+            }
+
+            if (typeof raw === "string") {
                 try {
-                    return JSON.stringify(value, null, 2);
+                    return JSON.parse(raw);
                 } catch {
-                    return String(value);
+                    return {};
                 }
             }
 
-            const text = String(value);
-
-            if (
-                (text.startsWith("{") && text.endsWith("}")) ||
-                (text.startsWith("[") && text.endsWith("]"))
-            ) {
-                try {
-                    return JSON.stringify(JSON.parse(text), null, 2);
-                } catch {}
-            }
-
-            return text;
+            return {};
         }
 
-        async function copyText(text, button, statusEl) {
+        function getAmount(item) {
+            if (item && typeof item === "object" && "amount" in item) {
+                return item.amount;
+            }
+
+            return item;
+        }
+
+        function matchingInventory() {
+            const inventory = parseInventory(values.inventory);
+
+            return Object.entries(inventory)
+                .filter(([key]) => {
+                    const lower = key.toLowerCase();
+                    return inventoryTerms.some(term => lower.includes(term));
+                })
+                .sort(([a], [b]) => a.localeCompare(b));
+        }
+
+        function renderXp() {
+            xpRows.innerHTML = "";
+
+            const rows = [
+                ["user_id", values.user_id],
+                ["exp_hunting_skill", values.exp_hunting_skill],
+                ["exp_farming_fishing", values.exp_farming_fishing]
+            ];
+
+            for (const [key, value] of rows) {
+                const row = document.createElement("tr");
+                const keyCell = document.createElement("td");
+                const valueCell = document.createElement("td");
+
+                keyCell.textContent = key;
+                valueCell.textContent = value === undefined ? "Not received" : String(value);
+
+                if (value === undefined) {
+                    valueCell.classList.add("missing");
+                }
+
+                row.appendChild(keyCell);
+                row.appendChild(valueCell);
+                xpRows.appendChild(row);
+            }
+        }
+
+        function renderInventory() {
+            inventoryRows.innerHTML = "";
+            const matches = matchingInventory();
+
+            if (!matches.length) {
+                const row = document.createElement("tr");
+                const cell = document.createElement("td");
+
+                cell.colSpan = 2;
+                cell.className = "empty";
+                cell.textContent = "No matching inventory entries found.";
+
+                row.appendChild(cell);
+                inventoryRows.appendChild(row);
+                return;
+            }
+
+            for (const [key, item] of matches) {
+                const row = document.createElement("tr");
+                const keyCell = document.createElement("td");
+                const amountCell = document.createElement("td");
+
+                keyCell.textContent = key;
+                amountCell.textContent = String(getAmount(item));
+
+                row.appendChild(keyCell);
+                row.appendChild(amountCell);
+                inventoryRows.appendChild(row);
+            }
+
+            footerText.textContent = `${matches.length} matching inventory entries found.`;
+        }
+
+        function render() {
+            renderXp();
+            renderInventory();
+        }
+
+        function requestData() {
+            send({
+                type: "getNamedData",
+                keys: wantedKeys
+            });
+        }
+
+        function buildCopyText() {
+            const lines = [
+                "TT XP Probe",
+                "",
+                `user_id: ${values.user_id ?? "Not received"}`,
+                `exp_hunting_skill: ${values.exp_hunting_skill ?? "Not received"}`,
+                `exp_farming_fishing: ${values.exp_farming_fishing ?? "Not received"}`,
+                "",
+                "Matching inventory:"
+            ];
+
+            const matches = matchingInventory();
+
+            if (!matches.length) {
+                lines.push("No matching inventory entries found.");
+            } else {
+                for (const [key, item] of matches) {
+                    lines.push(`${key}: ${getAmount(item)}`);
+                }
+            }
+
+            return lines.join("\n");
+        }
+
+        async function copyResults() {
+            const text = buildCopyText();
             let copied = false;
 
             try {
@@ -278,71 +399,9 @@
                 } catch {}
             }
 
-            if (copied) {
-                button.textContent = "Copied";
-                statusEl.textContent = "Copied to clipboard";
-
-                setTimeout(() => {
-                    button.textContent = "Copy Inventory";
-                    statusEl.textContent = "";
-                }, 1500);
-            } else {
-                statusEl.textContent = "Clipboard blocked - select the inventory text manually";
-            }
-        }
-
-        function render() {
-            rows.innerHTML = "";
-
-            for (const key of wantedKeys) {
-                const row = document.createElement("tr");
-                const keyCell = document.createElement("td");
-                const valueCell = document.createElement("td");
-
-                keyCell.textContent = key;
-
-                if (key === "inventory") {
-                    const box = document.createElement("div");
-                    box.className = "inventory-box";
-                    box.textContent = prettyValue(values[key]);
-
-                    const actions = document.createElement("div");
-                    actions.className = "inventory-actions";
-
-                    const copyBtn = document.createElement("button");
-                    copyBtn.textContent = "Copy Inventory";
-
-                    const copyStatus = document.createElement("span");
-                    copyStatus.id = "copyStatus";
-
-                    copyBtn.addEventListener("click", () => {
-                        copyText(prettyValue(values[key]), copyBtn, copyStatus);
-                    });
-
-                    actions.appendChild(copyBtn);
-                    actions.appendChild(copyStatus);
-
-                    valueCell.appendChild(box);
-                    valueCell.appendChild(actions);
-                } else {
-                    valueCell.textContent = prettyValue(values[key]);
-                }
-
-                if (values[key] === undefined) {
-                    valueCell.classList.add("missing");
-                }
-
-                row.appendChild(keyCell);
-                row.appendChild(valueCell);
-                rows.appendChild(row);
-            }
-        }
-
-        function requestData() {
-            send({
-                type: "getNamedData",
-                keys: wantedKeys
-            });
+            footerText.textContent = copied
+                ? "Results copied to clipboard."
+                : "Clipboard blocked. Take a screenshot of the matching inventory table.";
         }
 
         window.addEventListener("message", event => {
@@ -369,6 +428,7 @@
         });
 
         document.getElementById("refreshBtn").addEventListener("click", requestData);
+        document.getElementById("copyBtn").addEventListener("click", copyResults);
 
         document.getElementById("pinBtn").addEventListener("click", () => {
             send({ type: "pin" });
