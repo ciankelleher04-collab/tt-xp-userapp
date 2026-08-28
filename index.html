@@ -831,6 +831,14 @@
                                     <span>+20% vehicle storage</span>
                                 </div>
                             </div>
+
+                            <div class="field">
+                                <label>PostOP Perk</label>
+                                <div class="check-row">
+                                    <input id="postop" type="checkbox">
+                                    <span>+15% vehicle storage</span>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="loader-summary" id="loaderSummary">
@@ -897,6 +905,7 @@
         const mk15 = document.getElementById("mk15");
         const premium = document.getElementById("premium");
         const farmersMilk = document.getElementById("farmersMilk");
+        const postop = document.getElementById("postop");
         const loaderSummary = document.getElementById("loaderSummary");
         const loaderItemLabel = document.getElementById("loaderItemLabel");
         const loaderItemValue = document.getElementById("loaderItemValue");
@@ -1221,7 +1230,10 @@
         }
 
         function capacityMultiplier() {
-            return 1 + (premium.checked ? 0.15 : 0) + (farmersMilk.checked ? 0.20 : 0);
+            return 1
+                + (premium.checked ? 0.15 : 0)
+                + (farmersMilk.checked ? 0.20 : 0)
+                + (postop.checked ? 0.15 : 0);
         }
 
         function selectedLoadTargets() {
@@ -1247,19 +1259,39 @@
             }
 
             const multiplier = capacityMultiplier();
-            const totalKg = targets.reduce((sum, target) => sum + Math.round(target.size * multiplier), 0);
-            const units = state.mode === "fish"
-                ? Math.floor(totalKg / 0.1)
-                : Math.floor(totalKg / 20);
+            const capacities = targets.map(target => {
+                const kg = target.size * multiplier;
+                const rawUnits = state.mode === "fish"
+                    ? Math.floor(kg / 0.1)
+                    : Math.floor(kg / 20);
 
+                const loadUnits = state.mode === "fish"
+                    ? Math.floor(rawUnits / 10000) * 10000
+                    : rawUnits;
+
+                return { target, kg, rawUnits, loadUnits };
+            });
+
+            const totalKg = capacities.reduce((sum, entry) => sum + entry.kg, 0);
+            const rawUnits = capacities.reduce((sum, entry) => sum + entry.rawUnits, 0);
+            const loadUnits = capacities.reduce((sum, entry) => sum + entry.loadUnits, 0);
             const targetNames = targets.map(target => target.name).join(" + ");
             const itemName = state.mode === "fish" ? "normal fish" : "bears";
 
-            loaderSummary.innerHTML =
-                `<span class="small-value">${targetNames}</span> — ` +
-                `${fmt(totalKg, 0)} kg adjusted capacity, up to ` +
-                `<span class="small-value">${fmt(units, 0)} ${itemName}</span> when empty. ` +
-                `The game decides the actual maximum if the trunk already contains items.`;
+            if (state.mode === "fish") {
+                loaderSummary.innerHTML =
+                    `<span class="small-value">${targetNames}</span> — ` +
+                    `${fmt(totalKg, 0)} kg adjusted capacity. Theoretical max ` +
+                    `<span class="small-value">${fmt(rawUnits, 0)} fish</span>; ` +
+                    `auto-loader will take <span class="small-value">${fmt(loadUnits, 0)} fish</span> ` +
+                    `in full 10,000-fish sale batches.`;
+            } else {
+                loaderSummary.innerHTML =
+                    `<span class="small-value">${targetNames}</span> — ` +
+                    `${fmt(totalKg, 0)} kg adjusted capacity, up to ` +
+                    `<span class="small-value">${fmt(loadUnits, 0)} ${itemName}</span> when empty. ` +
+                    `The game decides the actual maximum if the trunk already contains items.`;
+            }
         }
 
         function setLoaderStatus(message, type = "") {
@@ -1380,6 +1412,26 @@
             await wait(80);
         }
 
+        async function submitAmount(value) {
+            await waitFor(() => state.cache.prompt, 150, 20);
+            send({
+                type: "forceSubmitValue",
+                value: String(Math.floor(value))
+            });
+            await wait(100);
+        }
+
+        function targetLoadAmount(target) {
+            const kg = target.size * capacityMultiplier();
+
+            if (state.mode === "fish") {
+                const fishCapacity = Math.floor(kg / 0.1);
+                return Math.floor(fishCapacity / 10000) * 10000;
+            }
+
+            return Math.floor(kg / 20);
+        }
+
         async function loadIntoTarget(target, itemName) {
             await waitFor(() => {
                 return state.cache.menu_open && findMenuChoiceExact("Take to Trunk");
@@ -1403,9 +1455,19 @@
                 throw new Error(`${itemName} was not found in the storage menu.`);
             }
 
-            // mod -1 is the game's "take max" behaviour used by existing UserApps.
-            await chooseMenu(itemChoice, -1);
-            await wait(100);
+            if (state.mode === "fish") {
+                const amount = targetLoadAmount(target);
+
+                if (amount <= 0) {
+                    throw new Error(`${target.name} does not have room for a full 10,000-fish sale batch.`);
+                }
+
+                await chooseMenu(itemChoice, 0);
+                await submitAmount(amount);
+            } else {
+                await chooseMenu(itemChoice, -1);
+                await wait(100);
+            }
 
             if (state.cache.menu_open) {
                 await menuBack();
@@ -1553,8 +1615,8 @@
             const shortage = Math.max(result.resource - currentStock, 0);
 
             targetResult.textContent = fmt(targetXp, 0);
-            currentResult.textContent = fmt(current);
-            xpRemainingEl.textContent = fmt(result.xpRemaining);
+            currentResult.textContent = fmt(Math.round(current), 0);
+            xpRemainingEl.textContent = fmt(Math.round(result.xpRemaining), 0);
 
             totalResource.textContent = fmt(result.resource, 0);
             stillNeeded.textContent = fmt(shortage, 0);
@@ -1605,7 +1667,7 @@
                 updateXpSources();
             }
 
-            currentXpDisplay.textContent = fmt(currentXp());
+            currentXpDisplay.textContent = fmt(Math.round(currentXp()), 0);
             bxpDisplay.textContent = fmt(detectedBxp(), 0);
             updateStorageDisplay();
             updateLoaderSummary();
@@ -1700,7 +1762,7 @@
             const now = new Date();
             lastUpdated.textContent = `Last updated: ${now.toLocaleTimeString()}`;
 
-            currentXpDisplay.textContent = fmt(currentXp());
+            currentXpDisplay.textContent = fmt(Math.round(currentXp()), 0);
             bxpDisplay.textContent = fmt(detectedBxp(), 0);
             recalc();
         });
