@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TT Data Monitor</title>
+
+    <style>
+        :root {
+            --bg: #121317;
+            --panel: #1a1c22;
+            --panel-light: #22252d;
+            --text: #f1f1f1;
+            --muted: #8f96a3;
+            --border: #30343d;
+            --accent: #4f9cff;
+            --highlight: #ffd166;
+            --green: #63d471;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: transparent;
+            color: var(--text);
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        #app {
+            position: fixed;
+            top: 40px;
+            left: 40px;
+            width: min(950px, calc(100vw - 80px));
+            height: min(700px, calc(100vh - 80px));
+            min-width: 600px;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            resize: both;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: 0 14px 45px rgba(0, 0, 0, 0.55);
+        }
+
+        header {
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 8px 12px;
+            background: var(--panel);
+            border-bottom: 1px solid var(--border);
+            cursor: move;
+        }
+
+        .title {
+            font-weight: 700;
+        }
+
+        #status {
+            margin-left: 10px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        #status.connected {
+            color: var(--green);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: minmax(220px, 1fr) auto auto auto;
+            gap: 8px;
+            padding: 10px;
+            background: var(--panel-light);
+            border-bottom: 1px solid var(--border);
+        }
+
+        input {
+            width: 100%;
+            padding: 9px 10px;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            background: #0d0f13;
+            color: var(--text);
+            outline: none;
+        }
+
+        input:focus {
+            border-color: var(--accent);
+        }
+
+        button {
+            padding: 8px 11px;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            background: #282c35;
+            color: var(--text);
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #323742;
+        }
+
+        .primary {
+            background: #1f5f9f;
+            border-color: #2d78bc;
+        }
+
+        .summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            padding: 7px 10px;
+            background: #15171c;
+            border-bottom: 1px solid var(--border);
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .summary strong {
+            color: var(--text);
+        }
+
+        .table-wrap {
+            flex: 1;
+            overflow: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            padding: 9px 10px;
+            text-align: left;
+            background: #191c22;
+            border-bottom: 1px solid var(--border);
+            color: var(--muted);
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        th:first-child {
+            width: 34%;
+        }
+
+        td {
+            padding: 8px 10px;
+            vertical-align: top;
+            border-bottom: 1px solid #20232a;
+            font-family: Consolas, "Courier New", monospace;
+            font-size: 13px;
+            line-height: 1.35;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        tbody tr:hover {
+            background: rgba(255, 255, 255, 0.025);
+        }
+
+        tr.interesting td:first-child {
+            color: var(--highlight);
+            font-weight: 700;
+        }
+
+        tr.updated {
+            animation: flash 0.8s ease-out;
+        }
+
+        @keyframes flash {
+            from {
+                background: rgba(79, 156, 255, 0.22);
+            }
+
+            to {
+                background: transparent;
+            }
+        }
+
+        #empty {
+            padding: 30px;
+            text-align: center;
+            color: var(--muted);
+        }
+
+        footer {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 7px 10px;
+            background: var(--panel);
+            border-top: 1px solid var(--border);
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        @media (max-width: 760px) {
+            #app {
+                top: 15px;
+                left: 15px;
+                width: calc(100vw - 30px);
+                height: calc(100vh - 30px);
+                min-width: 0;
+            }
+
+            .controls {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .controls input {
+                grid-column: span 2;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <header id="dragHandle">
+            <div class="header-left">
+                <div class="title">TT Data Monitor</div>
+                <div id="status">Waiting for data...</div>
+            </div>
+
+            <button id="pinBtn">Pin / ESC</button>
+        </header>
+
+        <div class="controls">
+            <input
+                id="filter"
+                type="text"
+                placeholder="Filter keys or values..."
+                autocomplete="off"
+            >
+
+            <button id="refreshBtn" class="primary">Refresh Data</button>
+            <button id="relevantBtn">Relevant Only</button>
+            <button id="copyBtn">Copy Visible</button>
+        </div>
+
+        <div class="summary">
+            <span>Cached: <strong id="cachedCount">0</strong></span>
+            <span>Visible: <strong id="visibleCount">0</strong></span>
+            <span>Last update: <strong id="lastUpdate">Never</strong></span>
+        </div>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Key</th>
+                        <th>Value</th>
+                    </tr>
+                </thead>
+
+                <tbody id="dataBody"></tbody>
+            </table>
+
+            <div id="empty">No data received yet.</div>
+        </div>
+
+        <footer>
+            <span>Try searching for exp_, inventory, fish, hunting or bxp.</span>
+            <span>ESC pins the app.</span>
+        </footer>
+    </div>
+
+    <script>
+        const cache = {};
+        const updatedKeys = new Set();
+
+        const interestingTerms = [
+            "exp_",
+            "inventory",
+            "pkey",
+            "user_id",
+            "discord",
+            "fish",
+            "fishing",
+            "hunt",
+            "hunting",
+            "bear",
+            "bxp",
+            "skill",
+            "bonus",
+            "boost",
+            "xp"
+        ];
+
+        const dataBody = document.getElementById("dataBody");
+        const filter = document.getElementById("filter");
+        const empty = document.getElementById("empty");
+        const status = document.getElementById("status");
+        const cachedCount = document.getElementById("cachedCount");
+        const visibleCount = document.getElementById("visibleCount");
+        const lastUpdate = document.getElementById("lastUpdate");
+        const relevantBtn = document.getElementById("relevantBtn");
+
+        let relevantOnly = false;
+
+        function send(payload) {
+            window.parent.postMessage(payload, "*");
+        }
+
+        function formatValue(value) {
+            if (value === null) return "null";
+            if (value === undefined) return "undefined";
+
+            if (typeof value === "object") {
+                try {
+                    return JSON.stringify(value, null, 2);
+                } catch {
+                    return String(value);
+                }
+            }
+
+            const text = String(value);
+
+            if (
+                (text.startsWith("{") && text.endsWith("}")) ||
+                (text.startsWith("[") && text.endsWith("]"))
+            ) {
+                try {
+                    return JSON.stringify(JSON.parse(text), null, 2);
+                } catch {}
+            }
+
+            return text;
+        }
+
+        function isInteresting(key, value) {
+            const text = `${key} ${formatValue(value)}`.toLowerCase();
+            return interestingTerms.some(term => text.includes(term));
+        }
+
+        function getVisibleEntries() {
+            const query = filter.value.trim().toLowerCase();
+
+            return Object.entries(cache)
+                .filter(([key, value]) => {
+                    const text = `${key} ${formatValue(value)}`.toLowerCase();
+
+                    if (relevantOnly && !isInteresting(key, value)) {
+                        return false;
+                    }
+
+                    if (query && !text.includes(query)) {
+                        return false;
+                    }
+
+                    return true;
+                })
+                .sort(([a], [b]) => a.localeCompare(b));
+        }
+
+        function render() {
+            const entries = getVisibleEntries();
+            dataBody.innerHTML = "";
+
+            for (const [key, value] of entries) {
+                const row = document.createElement("tr");
+
+                if (isInteresting(key, value)) {
+                    row.classList.add("interesting");
+                }
+
+                if (updatedKeys.has(key)) {
+                    row.classList.add("updated");
+                }
+
+                const keyCell = document.createElement("td");
+                const valueCell = document.createElement("td");
+
+                keyCell.textContent = key;
+                valueCell.textContent = formatValue(value);
+
+                row.appendChild(keyCell);
+                row.appendChild(valueCell);
+                dataBody.appendChild(row);
+            }
+
+            empty.style.display = entries.length ? "none" : "block";
+            cachedCount.textContent = Object.keys(cache).length;
+            visibleCount.textContent = entries.length;
+
+            setTimeout(() => updatedKeys.clear(), 900);
+        }
+
+        function updateCache(data) {
+            let changed = false;
+
+            for (const [key, value] of Object.entries(data)) {
+                if (cache[key] !== value) {
+                    updatedKeys.add(key);
+                }
+
+                cache[key] = value;
+                changed = true;
+            }
+
+            if (!changed) return;
+
+            status.textContent = "Connected";
+            status.classList.add("connected");
+            lastUpdate.textContent = new Date().toLocaleTimeString();
+
+            render();
+        }
+
+        window.addEventListener("message", event => {
+            const evt = event.data;
+
+            if (!evt || typeof evt !== "object") {
+                return;
+            }
+
+            if (evt.data && typeof evt.data === "object") {
+                updateCache(evt.data);
+            }
+        });
+
+        filter.addEventListener("input", render);
+
+        document.getElementById("refreshBtn").addEventListener("click", () => {
+            send({ type: "getData" });
+        });
+
+        relevantBtn.addEventListener("click", () => {
+            relevantOnly = !relevantOnly;
+            relevantBtn.textContent = relevantOnly ? "Show All" : "Relevant Only";
+            render();
+        });
+
+        document.getElementById("copyBtn").addEventListener("click", async () => {
+            const lines = getVisibleEntries().map(([key, value]) => {
+                return `${key}: ${formatValue(value)}`;
+            });
+
+            const text = lines.join("\n");
+
+            try {
+                await navigator.clipboard.writeText(text);
+                document.getElementById("copyBtn").textContent = "Copied";
+
+                setTimeout(() => {
+                    document.getElementById("copyBtn").textContent = "Copy Visible";
+                }, 1200);
+            } catch {
+                window.prompt("Copy the data below:", text);
+            }
+        });
+
+        document.getElementById("pinBtn").addEventListener("click", () => {
+            send({ type: "pin" });
+        });
+
+        window.addEventListener("keydown", event => {
+            if (event.key === "Escape") {
+                send({ type: "pin" });
+            }
+        });
+
+        window.addEventListener("load", () => {
+            send({ type: "getData" });
+        });
+
+        const app = document.getElementById("app");
+        const dragHandle = document.getElementById("dragHandle");
+
+        let dragging = false;
+        let startX = 0;
+        let startY = 0;
+        let startLeft = 0;
+        let startTop = 0;
+
+        dragHandle.addEventListener("mousedown", event => {
+            if (event.target.tagName === "BUTTON") return;
+
+            dragging = true;
+            startX = event.clientX;
+            startY = event.clientY;
+            startLeft = app.offsetLeft;
+            startTop = app.offsetTop;
+
+            event.preventDefault();
+        });
+
+        window.addEventListener("mousemove", event => {
+            if (!dragging) return;
+
+            app.style.left = `${startLeft + event.clientX - startX}px`;
+            app.style.top = `${startTop + event.clientY - startY}px`;
+        });
+
+        window.addEventListener("mouseup", () => {
+            dragging = false;
+        });
+    </script>
+</body>
+</html>
