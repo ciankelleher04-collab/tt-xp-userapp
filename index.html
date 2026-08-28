@@ -30,8 +30,11 @@
             position: fixed;
             top: 50px;
             left: 50px;
-            width: 640px;
+            width: 760px;
             max-width: calc(100vw - 100px);
+            max-height: calc(100vh - 100px);
+            display: flex;
+            flex-direction: column;
             background: var(--bg);
             border: 1px solid var(--border);
             border-radius: 8px;
@@ -46,6 +49,7 @@
             padding: 10px 12px;
             background: var(--panel);
             border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
         }
 
         .title {
@@ -83,6 +87,7 @@
 
         main {
             padding: 12px;
+            overflow: auto;
         }
 
         .note {
@@ -106,14 +111,18 @@
         }
 
         th {
+            position: sticky;
+            top: 0;
+            background: var(--bg);
             color: var(--muted);
             font-size: 12px;
             text-transform: uppercase;
+            z-index: 1;
         }
 
         th:first-child,
         td:first-child {
-            width: 42%;
+            width: 34%;
         }
 
         td {
@@ -127,12 +136,45 @@
             color: var(--muted);
         }
 
+        .inventory-box {
+            max-height: 240px;
+            overflow: auto;
+            padding: 6px;
+            background: #0d0f13;
+            border: 1px solid #252a33;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            user-select: text;
+        }
+
+        .inventory-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        #copyArea {
+            position: fixed;
+            left: -9999px;
+            top: -9999px;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+        }
+
+        #copyStatus {
+            color: var(--muted);
+            font-size: 12px;
+            align-self: center;
+        }
+
         footer {
             padding: 8px 12px;
             background: var(--panel);
             border-top: 1px solid var(--border);
             color: var(--muted);
             font-size: 12px;
+            flex-shrink: 0;
         }
     </style>
 </head>
@@ -153,7 +195,7 @@
 
         <main>
             <div class="note">
-                This test only requests the few values we need for the XP calculator.
+                Only the values needed for the XP calculator are requested.
             </div>
 
             <table>
@@ -168,9 +210,11 @@
         </main>
 
         <footer>
-            If inventory is long, take a screenshot or copy the visible value manually.
+            Inventory has its own scroll area and copy button.
         </footer>
     </div>
+
+    <textarea id="copyArea" readonly></textarea>
 
     <script>
         const wantedKeys = [
@@ -184,12 +228,13 @@
         const values = {};
         const rows = document.getElementById("rows");
         const status = document.getElementById("status");
+        const copyArea = document.getElementById("copyArea");
 
         function send(payload) {
             window.parent.postMessage(payload, "*");
         }
 
-        function formatValue(value) {
+        function prettyValue(value) {
             if (value === undefined) return "Not received";
             if (value === null) return "null";
 
@@ -215,6 +260,37 @@
             return text;
         }
 
+        async function copyText(text, button, statusEl) {
+            let copied = false;
+
+            try {
+                await navigator.clipboard.writeText(text);
+                copied = true;
+            } catch {}
+
+            if (!copied) {
+                copyArea.value = text;
+                copyArea.focus();
+                copyArea.select();
+
+                try {
+                    copied = document.execCommand("copy");
+                } catch {}
+            }
+
+            if (copied) {
+                button.textContent = "Copied";
+                statusEl.textContent = "Copied to clipboard";
+
+                setTimeout(() => {
+                    button.textContent = "Copy Inventory";
+                    statusEl.textContent = "";
+                }, 1500);
+            } else {
+                statusEl.textContent = "Clipboard blocked - select the inventory text manually";
+            }
+        }
+
         function render() {
             rows.innerHTML = "";
 
@@ -224,7 +300,33 @@
                 const valueCell = document.createElement("td");
 
                 keyCell.textContent = key;
-                valueCell.textContent = formatValue(values[key]);
+
+                if (key === "inventory") {
+                    const box = document.createElement("div");
+                    box.className = "inventory-box";
+                    box.textContent = prettyValue(values[key]);
+
+                    const actions = document.createElement("div");
+                    actions.className = "inventory-actions";
+
+                    const copyBtn = document.createElement("button");
+                    copyBtn.textContent = "Copy Inventory";
+
+                    const copyStatus = document.createElement("span");
+                    copyStatus.id = "copyStatus";
+
+                    copyBtn.addEventListener("click", () => {
+                        copyText(prettyValue(values[key]), copyBtn, copyStatus);
+                    });
+
+                    actions.appendChild(copyBtn);
+                    actions.appendChild(copyStatus);
+
+                    valueCell.appendChild(box);
+                    valueCell.appendChild(actions);
+                } else {
+                    valueCell.textContent = prettyValue(values[key]);
+                }
 
                 if (values[key] === undefined) {
                     valueCell.classList.add("missing");
