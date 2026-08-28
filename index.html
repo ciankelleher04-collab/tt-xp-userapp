@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TT XP Probe</title>
+    <title>TT XP Cache Probe</title>
     <style>
         :root {
             --bg: #121419;
@@ -29,7 +29,7 @@
             position: fixed;
             top: 45px;
             left: 45px;
-            width: 760px;
+            width: 800px;
             max-width: calc(100vw - 90px);
             max-height: calc(100vh - 90px);
             display: flex;
@@ -95,15 +95,7 @@
             margin-bottom: 12px;
             color: var(--muted);
             font-size: 12px;
-        }
-
-        .section {
-            margin-bottom: 18px;
-        }
-
-        .section h3 {
-            margin: 0 0 8px;
-            font-size: 14px;
+            line-height: 1.4;
         }
 
         table {
@@ -121,9 +113,13 @@
         }
 
         th {
+            position: sticky;
+            top: 0;
+            background: var(--bg);
             color: var(--muted);
             font-size: 12px;
             text-transform: uppercase;
+            z-index: 1;
         }
 
         th:first-child,
@@ -138,7 +134,6 @@
             white-space: pre-wrap;
         }
 
-        .missing,
         .empty {
             color: var(--muted);
         }
@@ -166,7 +161,7 @@
     <div id="app">
         <header>
             <div>
-                <span class="title">TT XP Probe</span>
+                <span class="title">TT XP Cache Probe</span>
                 <span id="status">Waiting for data...</span>
             </div>
 
@@ -180,65 +175,47 @@
 
         <main>
             <div class="note">
-                This version only shows XP values and inventory entries that look relevant to the calculator.
+                Requests the full cache once, but only displays keys that look relevant to XP, skills, bonuses, boosts, SOTD, hunting or fishing.
             </div>
 
-            <div class="section">
-                <h3>Player / XP</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Key</th>
-                            <th>Value</th>
-                        </tr>
-                    </thead>
-                    <tbody id="xpRows"></tbody>
-                </table>
-            </div>
-
-            <div class="section">
-                <h3>Matching Inventory Entries</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Item</th>
-                            <th>Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody id="inventoryRows"></tbody>
-                </table>
-            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Key</th>
+                        <th>Value</th>
+                    </tr>
+                </thead>
+                <tbody id="rows"></tbody>
+            </table>
         </main>
 
         <footer id="footerText">
-            Looking for BXP, XP bonuses, boosts, fishing, hunting, fish and bear related items.
+            Waiting for a full cache response.
         </footer>
     </div>
 
     <textarea id="copyArea" readonly></textarea>
 
     <script>
-        const wantedKeys = [
-            "user_id",
-            "inventory",
-            "exp_hunting_skill",
-            "exp_farming_fishing"
-        ];
-
-        const inventoryTerms = [
-            "exp_token",
-            "exp_bonus",
+        const terms = [
+            "exp",
+            "xp",
+            "skill",
+            "bonus",
             "boost",
-            "fish",
-            "fishing",
-            "hunt",
+            "sotd",
             "hunting",
+            "fishing",
+            "fish",
             "bear"
         ];
 
+        const ignoredKeys = new Set([
+            "inventory"
+        ]);
+
         const values = {};
-        const xpRows = document.getElementById("xpRows");
-        const inventoryRows = document.getElementById("inventoryRows");
+        const rows = document.getElementById("rows");
         const status = document.getElementById("status");
         const footerText = document.getElementById("footerText");
         const copyArea = document.getElementById("copyArea");
@@ -247,134 +224,87 @@
             window.parent.postMessage(payload, "*");
         }
 
-        function parseInventory(raw) {
-            if (!raw) return {};
+        function isRelevantKey(key) {
+            if (ignoredKeys.has(key)) return false;
 
-            if (typeof raw === "object") {
-                return raw;
-            }
+            const lower = key.toLowerCase();
+            return terms.some(term => lower.includes(term));
+        }
 
-            if (typeof raw === "string") {
+        function formatValue(value) {
+            if (value === undefined) return "undefined";
+            if (value === null) return "null";
+
+            if (typeof value === "object") {
                 try {
-                    return JSON.parse(raw);
+                    const text = JSON.stringify(value);
+                    return text.length > 500 ? `${text.slice(0, 500)}...` : text;
                 } catch {
-                    return {};
+                    return String(value);
                 }
             }
 
-            return {};
+            const text = String(value);
+            return text.length > 500 ? `${text.slice(0, 500)}...` : text;
         }
 
-        function getAmount(item) {
-            if (item && typeof item === "object" && "amount" in item) {
-                return item.amount;
-            }
-
-            return item;
-        }
-
-        function matchingInventory() {
-            const inventory = parseInventory(values.inventory);
-
-            return Object.entries(inventory)
-                .filter(([key]) => {
-                    const lower = key.toLowerCase();
-                    return inventoryTerms.some(term => lower.includes(term));
-                })
+        function relevantEntries() {
+            return Object.entries(values)
+                .filter(([key]) => isRelevantKey(key))
                 .sort(([a], [b]) => a.localeCompare(b));
         }
 
-        function renderXp() {
-            xpRows.innerHTML = "";
+        function render() {
+            rows.innerHTML = "";
 
-            const rows = [
-                ["user_id", values.user_id],
-                ["exp_hunting_skill", values.exp_hunting_skill],
-                ["exp_farming_fishing", values.exp_farming_fishing]
-            ];
+            const entries = relevantEntries();
 
-            for (const [key, value] of rows) {
-                const row = document.createElement("tr");
-                const keyCell = document.createElement("td");
-                const valueCell = document.createElement("td");
-
-                keyCell.textContent = key;
-                valueCell.textContent = value === undefined ? "Not received" : String(value);
-
-                if (value === undefined) {
-                    valueCell.classList.add("missing");
-                }
-
-                row.appendChild(keyCell);
-                row.appendChild(valueCell);
-                xpRows.appendChild(row);
-            }
-        }
-
-        function renderInventory() {
-            inventoryRows.innerHTML = "";
-            const matches = matchingInventory();
-
-            if (!matches.length) {
+            if (!entries.length) {
                 const row = document.createElement("tr");
                 const cell = document.createElement("td");
 
                 cell.colSpan = 2;
                 cell.className = "empty";
-                cell.textContent = "No matching inventory entries found.";
+                cell.textContent = "No matching cache keys found yet.";
 
                 row.appendChild(cell);
-                inventoryRows.appendChild(row);
+                rows.appendChild(row);
+
+                footerText.textContent = "No matching keys found.";
                 return;
             }
 
-            for (const [key, item] of matches) {
+            for (const [key, value] of entries) {
                 const row = document.createElement("tr");
                 const keyCell = document.createElement("td");
-                const amountCell = document.createElement("td");
+                const valueCell = document.createElement("td");
 
                 keyCell.textContent = key;
-                amountCell.textContent = String(getAmount(item));
+                valueCell.textContent = formatValue(value);
 
                 row.appendChild(keyCell);
-                row.appendChild(amountCell);
-                inventoryRows.appendChild(row);
+                row.appendChild(valueCell);
+                rows.appendChild(row);
             }
 
-            footerText.textContent = `${matches.length} matching inventory entries found.`;
-        }
-
-        function render() {
-            renderXp();
-            renderInventory();
+            footerText.textContent = `${entries.length} matching cache keys found.`;
         }
 
         function requestData() {
-            send({
-                type: "getNamedData",
-                keys: wantedKeys
-            });
+            send({ type: "getData" });
         }
 
         function buildCopyText() {
-            const lines = [
-                "TT XP Probe",
-                "",
-                `user_id: ${values.user_id ?? "Not received"}`,
-                `exp_hunting_skill: ${values.exp_hunting_skill ?? "Not received"}`,
-                `exp_farming_fishing: ${values.exp_farming_fishing ?? "Not received"}`,
-                "",
-                "Matching inventory:"
-            ];
+            const entries = relevantEntries();
+            const lines = ["TT XP Cache Probe", ""];
 
-            const matches = matchingInventory();
+            if (!entries.length) {
+                lines.push("No matching cache keys found.");
+                return lines.join("\n");
+            }
 
-            if (!matches.length) {
-                lines.push("No matching inventory entries found.");
-            } else {
-                for (const [key, item] of matches) {
-                    lines.push(`${key}: ${getAmount(item)}`);
-                }
+            for (const [key, value] of entries) {
+                lines.push(`${key}: ${formatValue(value)}`);
             }
 
             return lines.join("\n");
@@ -401,7 +331,7 @@
 
             footerText.textContent = copied
                 ? "Results copied to clipboard."
-                : "Clipboard blocked. Take a screenshot of the matching inventory table.";
+                : "Clipboard blocked. Take a screenshot of the table.";
         }
 
         window.addEventListener("message", event => {
@@ -413,14 +343,15 @@
 
             let changed = false;
 
-            for (const key of wantedKeys) {
-                if (Object.prototype.hasOwnProperty.call(evt.data, key)) {
-                    values[key] = evt.data[key];
+            for (const [key, value] of Object.entries(evt.data)) {
+                values[key] = value;
+
+                if (isRelevantKey(key)) {
                     changed = true;
                 }
             }
 
-            if (changed) {
+            if (changed || Object.keys(values).length) {
                 status.textContent = "Connected";
                 status.classList.add("connected");
                 render();
