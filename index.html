@@ -842,6 +842,7 @@
 
             <div class="window-actions">
                 <button id="pinBtn">📌 Pin</button>
+                <button id="parkBtn">▾ Hide</button>
                 <button id="closeBtn">×</button>
             </div>
         </div>
@@ -1112,6 +1113,7 @@
         const app = document.getElementById("app");
         const titlebar = document.getElementById("titlebar");
         const resizeHandle = document.getElementById("resizeHandle");
+        const parkBtn = document.getElementById("parkBtn");
         const calcWorkspace = document.getElementById("calcWorkspace");
         const loaderWorkspace = document.getElementById("loaderWorkspace");
 
@@ -2065,6 +2067,7 @@
         });
 
         document.getElementById("pinBtn").addEventListener("click", () => send({ type: "pin" }));
+        parkBtn.addEventListener("click", togglePark);
         document.getElementById("closeBtn").addEventListener("click", () => send({ type: "close" }));
 
         window.addEventListener("keydown", event => {
@@ -2072,6 +2075,59 @@
                 send({ type: "pin" });
             }
         });
+
+        let parked = false;
+        let parkedFrom = null;
+
+        function parkableBounds() {
+            const visible = 54;
+
+            return {
+                minLeft: -app.offsetWidth + visible,
+                maxLeft: window.innerWidth - visible,
+                minTop: -app.offsetHeight + visible,
+                maxTop: window.innerHeight - visible
+            };
+        }
+
+        function clampParkable(left, top) {
+            const bounds = parkableBounds();
+
+            return {
+                left: Math.min(bounds.maxLeft, Math.max(bounds.minLeft, left)),
+                top: Math.min(bounds.maxTop, Math.max(bounds.minTop, top))
+            };
+        }
+
+        function togglePark() {
+            if (parked) {
+                if (parkedFrom) {
+                    app.style.left = `${parkedFrom.left}px`;
+                    app.style.top = `${parkedFrom.top}px`;
+                }
+
+                parked = false;
+                parkedFrom = null;
+                parkBtn.textContent = "▾ Hide";
+                return;
+            }
+
+            parkedFrom = {
+                left: app.offsetLeft,
+                top: app.offsetTop
+            };
+
+            const left = Math.min(
+                Math.max(app.offsetLeft, 0),
+                Math.max(window.innerWidth - app.offsetWidth, 0)
+            );
+
+            app.style.left = `${left}px`;
+            app.style.top = `${window.innerHeight - 54}px`;
+
+            parked = true;
+            parkBtn.textContent = "▴ Show";
+        }
 
         let dragging = false;
         let dragStartX = 0;
@@ -2108,21 +2164,19 @@
 
         window.addEventListener("mousemove", event => {
             if (dragging) {
-                const maxLeft = Math.max(window.innerWidth - app.offsetWidth, 0);
-                const maxTop = Math.max(window.innerHeight - app.offsetHeight, 0);
-
-                const nextLeft = Math.min(
-                    Math.max(appStartX + event.clientX - dragStartX, 0),
-                    maxLeft
+                const next = clampParkable(
+                    appStartX + event.clientX - dragStartX,
+                    appStartY + event.clientY - dragStartY
                 );
 
-                const nextTop = Math.min(
-                    Math.max(appStartY + event.clientY - dragStartY, 0),
-                    maxTop
-                );
+                app.style.left = `${next.left}px`;
+                app.style.top = `${next.top}px`;
 
-                app.style.left = `${nextLeft}px`;
-                app.style.top = `${nextTop}px`;
+                if (parked) {
+                    parked = false;
+                    parkedFrom = null;
+                    parkBtn.textContent = "▾ Hide";
+                }
             }
 
             if (resizing) {
@@ -2150,11 +2204,14 @@
         });
 
         window.addEventListener("resize", () => {
-            const maxLeft = Math.max(window.innerWidth - app.offsetWidth, 0);
-            const maxTop = Math.max(window.innerHeight - app.offsetHeight, 0);
+            if (parked) {
+                app.style.top = `${window.innerHeight - 54}px`;
+                return;
+            }
 
-            app.style.left = `${Math.min(app.offsetLeft, maxLeft)}px`;
-            app.style.top = `${Math.min(app.offsetTop, maxTop)}px`;
+            const next = clampParkable(app.offsetLeft, app.offsetTop);
+            app.style.left = `${next.left}px`;
+            app.style.top = `${next.top}px`;
         });
 
         window.addEventListener("load", () => {
