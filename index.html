@@ -3,45 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TT XP Cache Probe</title>
+    <title>TT XP Calculator</title>
     <style>
         :root {
-            --bg: #121419;
-            --panel: #1b1e25;
-            --border: #303540;
+            --bg: #111318;
+            --panel: #1a1d24;
+            --panel-2: #21252e;
+            --border: #303640;
             --text: #f2f4f7;
-            --muted: #9299a6;
-            --good: #68d391;
+            --muted: #959daa;
+            --blue: #5865f2;
+            --orange: #c47f2b;
+            --green: #69d391;
+            --danger: #e57373;
         }
 
         * {
             box-sizing: border-box;
         }
 
-        body {
+        html, body {
             margin: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
             background: transparent;
             color: var(--text);
             font-family: Arial, Helvetica, sans-serif;
+            user-select: none;
         }
 
         #app {
             position: fixed;
-            top: 45px;
-            left: 45px;
-            width: 800px;
-            max-width: calc(100vw - 90px);
-            max-height: calc(100vh - 90px);
+            left: 60px;
+            top: 60px;
+            width: 690px;
+            height: 590px;
+            min-width: 520px;
+            min-height: 430px;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
             background: var(--bg);
             border: 1px solid var(--border);
-            border-radius: 8px;
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
-            overflow: hidden;
+            border-radius: 9px;
+            box-shadow: 0 14px 45px rgba(0, 0, 0, 0.5);
         }
 
-        header {
+        #titlebar {
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -49,289 +58,624 @@
             padding: 10px 12px;
             background: var(--panel);
             border-bottom: 1px solid var(--border);
+            cursor: move;
             flex-shrink: 0;
+        }
+
+        .title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            min-width: 0;
         }
 
         .title {
             font-weight: 700;
+            white-space: nowrap;
         }
 
-        #status {
-            margin-left: 8px;
+        #connection {
             color: var(--muted);
             font-size: 12px;
+            white-space: nowrap;
         }
 
-        #status.connected {
-            color: var(--good);
+        #connection.connected {
+            color: var(--green);
         }
 
-        .buttons {
+        .window-actions {
             display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
+            gap: 7px;
         }
 
         button {
-            padding: 7px 10px;
             border: 1px solid var(--border);
             border-radius: 5px;
-            background: #282d36;
+            background: #292e38;
             color: var(--text);
-            cursor: pointer;
+            padding: 7px 10px;
             font-weight: 600;
+            cursor: pointer;
         }
 
         button:hover {
-            background: #343a46;
+            background: #353b47;
         }
 
-        main {
-            padding: 12px;
+        button:active {
+            transform: translateY(1px);
+        }
+
+        .tabs {
+            display: flex;
+            padding: 10px 12px 0;
+            gap: 8px;
+            background: var(--bg);
+            flex-shrink: 0;
+        }
+
+        .tab {
+            min-width: 110px;
+        }
+
+        .tab.active[data-mode="fish"] {
+            background: var(--blue);
+            border-color: var(--blue);
+        }
+
+        .tab.active[data-mode="bear"] {
+            background: var(--orange);
+            border-color: var(--orange);
+        }
+
+        #content {
             overflow: auto;
+            padding: 12px;
+            flex: 1;
         }
 
-        .note {
-            margin-bottom: 12px;
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .field,
+        .result-card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            padding: 10px;
+        }
+
+        .field label,
+        .result-label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        input,
+        select {
+            width: 100%;
+            height: 36px;
+            padding: 7px 9px;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            background: #0d0f13;
+            color: var(--text);
+            font: inherit;
+            user-select: text;
+            outline: none;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: #5c6675;
+        }
+
+        input[readonly] {
+            color: #c7ccd4;
+            background: #14171c;
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 36px;
+        }
+
+        .checkbox-row input {
+            width: 18px;
+            height: 18px;
+        }
+
+        .checkbox-row label {
+            margin: 0;
+            color: var(--text);
+            text-transform: none;
+            letter-spacing: 0;
+            font-size: 14px;
+        }
+
+        .section-title {
+            margin: 16px 0 8px;
+            font-size: 13px;
+            color: var(--muted);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .results {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .result-value {
+            font-size: 20px;
+            font-weight: 700;
+            overflow-wrap: anywhere;
+        }
+
+        .result-sub {
+            margin-top: 4px;
+            color: var(--muted);
+            font-size: 11px;
+        }
+
+        #sotdNote {
+            margin-top: 10px;
+            padding: 9px 10px;
+            border-radius: 6px;
+            background: var(--panel-2);
             color: var(--muted);
             font-size: 12px;
             line-height: 1.4;
         }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            table-layout: fixed;
-        }
-
-        th,
-        td {
-            padding: 8px 9px;
-            border-bottom: 1px solid #242831;
-            text-align: left;
-            vertical-align: top;
-        }
-
-        th {
-            position: sticky;
-            top: 0;
-            background: var(--bg);
-            color: var(--muted);
+        #warning {
+            display: none;
+            margin-top: 10px;
+            padding: 9px 10px;
+            border: 1px solid rgba(229, 115, 115, 0.45);
+            border-radius: 6px;
+            color: #f0aaaa;
+            background: rgba(229, 115, 115, 0.08);
             font-size: 12px;
-            text-transform: uppercase;
-            z-index: 1;
         }
 
-        th:first-child,
-        td:first-child {
-            width: 46%;
-        }
-
-        td {
-            font-family: Consolas, "Courier New", monospace;
-            font-size: 13px;
-            overflow-wrap: anywhere;
-            white-space: pre-wrap;
-        }
-
-        .empty {
-            color: var(--muted);
-        }
-
-        footer {
+        #footer {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
             padding: 8px 12px;
             background: var(--panel);
             border-top: 1px solid var(--border);
             color: var(--muted);
-            font-size: 12px;
+            font-size: 11px;
             flex-shrink: 0;
         }
 
-        #copyArea {
-            position: fixed;
-            left: -9999px;
-            top: -9999px;
-            width: 1px;
-            height: 1px;
-            opacity: 0;
+        #resizeHandle {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            width: 20px;
+            height: 20px;
+            cursor: nwse-resize;
+        }
+
+        #resizeHandle::after {
+            content: "";
+            position: absolute;
+            right: 4px;
+            bottom: 4px;
+            width: 8px;
+            height: 8px;
+            border-right: 2px solid #697180;
+            border-bottom: 2px solid #697180;
+        }
+
+        @media (max-width: 620px) {
+            .grid,
+            .results {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
     <div id="app">
-        <header>
-            <div>
-                <span class="title">TT XP Cache Probe</span>
-                <span id="status">Waiting for data...</span>
+        <div id="titlebar">
+            <div class="title-wrap">
+                <span class="title">TT XP Calculator</span>
+                <span id="connection">Waiting for game data...</span>
             </div>
 
-            <div class="buttons">
+            <div class="window-actions">
                 <button id="refreshBtn">Refresh</button>
-                <button id="copyBtn">Copy Results</button>
                 <button id="pinBtn">Pin</button>
                 <button id="closeBtn">Close</button>
             </div>
-        </header>
+        </div>
 
-        <main>
-            <div class="note">
-                Requests the full cache once, but only displays keys that look relevant to XP, skills, bonuses, boosts, SOTD, hunting or fishing.
+        <div class="tabs">
+            <button class="tab active" data-mode="fish">🐟 Fishing</button>
+            <button class="tab" data-mode="bear">🐻 Hunting</button>
+        </div>
+
+        <div id="content">
+            <div class="grid">
+                <div class="field">
+                    <label for="target">Target</label>
+                    <select id="target">
+                        <option value="25250">Level 100 — 25,250 XP</option>
+                        <option value="1000000" selected>Level 632 — 1,000,000 XP</option>
+                        <option value="10000000">Level 2000 — 10,000,000 XP</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="currentXp">Current XP</label>
+                    <input id="currentXp" type="number" step="any" readonly>
+                </div>
+
+                <div class="field">
+                    <label for="baseXp">Base XP Bonus %</label>
+                    <input id="baseXp" type="number" step="0.1" min="0" value="0">
+                </div>
+
+                <div class="field">
+                    <label for="sotdBonus">SOTD Bonus %</label>
+                    <input id="sotdBonus" type="number" step="0.1" min="0" value="0">
+                </div>
+
+                <div class="field">
+                    <label for="bxpAvailable">BXP Available</label>
+                    <input id="bxpAvailable" type="number" step="1" min="0" readonly>
+                </div>
+
+                <div class="field">
+                    <label>Bonus XP</label>
+                    <div class="checkbox-row">
+                        <input id="useBonus" type="checkbox" checked>
+                        <label for="useBonus">Use available BXP</label>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label id="stockLabel" for="stock">Fish Available</label>
+                    <input id="stock" type="number" step="1" min="0" value="0">
+                </div>
+
+                <div class="field">
+                    <label>Detected BXP Item</label>
+                    <input id="bxpKey" type="text" readonly value="Not found">
+                </div>
             </div>
 
-            <table>
-                <thead>
-                    <tr>
-                        <th>Key</th>
-                        <th>Value</th>
-                    </tr>
-                </thead>
-                <tbody id="rows"></tbody>
-            </table>
-        </main>
+            <div id="sotdNote">
+                SOTD is manual for now. Enter the SOTD percentage only if the current SOTD applies to the selected skill.
+            </div>
 
-        <footer id="footerText">
-            Waiting for a full cache response.
-        </footer>
+            <div id="warning"></div>
+
+            <div class="section-title">Results</div>
+
+            <div class="results">
+                <div class="result-card">
+                    <span class="result-label">XP Remaining</span>
+                    <div class="result-value" id="xpRemaining">0</div>
+                </div>
+
+                <div class="result-card">
+                    <span class="result-label" id="neededLabel">Fish Remaining</span>
+                    <div class="result-value" id="resourceNeeded">0</div>
+                    <div class="result-sub" id="resourceSub"></div>
+                </div>
+
+                <div class="result-card">
+                    <span class="result-label">Total BXP Needed</span>
+                    <div class="result-value" id="totalBxp">0</div>
+                    <div class="result-sub">BXP required if the whole remaining grind used BXP.</div>
+                </div>
+
+                <div class="result-card">
+                    <span class="result-label">BXP Still Needed</span>
+                    <div class="result-value" id="bxpNeeded">0</div>
+                </div>
+
+                <div class="result-card">
+                    <span class="result-label" id="stockShortLabel">Fish Still Needed After Stock</span>
+                    <div class="result-value" id="stockShort">0</div>
+                </div>
+
+                <div class="result-card">
+                    <span class="result-label">Effective XP Bonus</span>
+                    <div class="result-value" id="effectiveBonus">0%</div>
+                    <div class="result-sub">Base XP plus the manual SOTD bonus.</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="footer">
+            <span>Drag the title bar • resize from bottom-right</span>
+            <span id="modeInfo">Fishing: 10,000 fish per sale</span>
+        </div>
+
+        <div id="resizeHandle"></div>
     </div>
 
-    <textarea id="copyArea" readonly></textarea>
-
     <script>
-        const terms = [
-            "exp",
-            "xp",
-            "skill",
-            "bonus",
-            "boost",
-            "sotd",
-            "hunting",
-            "fishing",
-            "fish",
-            "bear"
-        ];
+        const app = document.getElementById("app");
+        const titlebar = document.getElementById("titlebar");
+        const resizeHandle = document.getElementById("resizeHandle");
+        const connection = document.getElementById("connection");
 
-        const ignoredKeys = new Set([
-            "inventory"
-        ]);
+        const target = document.getElementById("target");
+        const currentXp = document.getElementById("currentXp");
+        const baseXp = document.getElementById("baseXp");
+        const sotdBonus = document.getElementById("sotdBonus");
+        const bxpAvailable = document.getElementById("bxpAvailable");
+        const useBonus = document.getElementById("useBonus");
+        const stock = document.getElementById("stock");
+        const stockLabel = document.getElementById("stockLabel");
+        const bxpKey = document.getElementById("bxpKey");
 
-        const values = {};
-        const rows = document.getElementById("rows");
-        const status = document.getElementById("status");
-        const footerText = document.getElementById("footerText");
-        const copyArea = document.getElementById("copyArea");
+        const xpRemainingEl = document.getElementById("xpRemaining");
+        const neededLabel = document.getElementById("neededLabel");
+        const resourceNeeded = document.getElementById("resourceNeeded");
+        const resourceSub = document.getElementById("resourceSub");
+        const totalBxpEl = document.getElementById("totalBxp");
+        const bxpNeededEl = document.getElementById("bxpNeeded");
+        const stockShortLabel = document.getElementById("stockShortLabel");
+        const stockShort = document.getElementById("stockShort");
+        const effectiveBonus = document.getElementById("effectiveBonus");
+        const modeInfo = document.getElementById("modeInfo");
+        const warning = document.getElementById("warning");
+
+        const state = {
+            mode: "fish",
+            inventory: {},
+            fishingXp: 0,
+            huntingXp: 0
+        };
 
         function send(payload) {
             window.parent.postMessage(payload, "*");
         }
 
-        function isRelevantKey(key) {
-            if (ignoredKeys.has(key)) return false;
-
-            const lower = key.toLowerCase();
-            return terms.some(term => lower.includes(term));
+        function number(value, fallback = 0) {
+            const parsed = Number(value);
+            return Number.isFinite(parsed) ? parsed : fallback;
         }
 
-        function formatValue(value) {
-            if (value === undefined) return "undefined";
-            if (value === null) return "null";
+        function format(value, decimals = 0) {
+            return number(value).toLocaleString(undefined, {
+                minimumFractionDigits: decimals,
+                maximumFractionDigits: decimals
+            });
+        }
 
-            if (typeof value === "object") {
+        function parseInventory(raw) {
+            if (!raw) return {};
+
+            if (typeof raw === "object") {
+                return raw;
+            }
+
+            if (typeof raw === "string") {
                 try {
-                    const text = JSON.stringify(value);
-                    return text.length > 500 ? `${text.slice(0, 500)}...` : text;
-                } catch {
-                    return String(value);
-                }
-            }
-
-            const text = String(value);
-            return text.length > 500 ? `${text.slice(0, 500)}...` : text;
-        }
-
-        function relevantEntries() {
-            return Object.entries(values)
-                .filter(([key]) => isRelevantKey(key))
-                .sort(([a], [b]) => a.localeCompare(b));
-        }
-
-        function render() {
-            rows.innerHTML = "";
-
-            const entries = relevantEntries();
-
-            if (!entries.length) {
-                const row = document.createElement("tr");
-                const cell = document.createElement("td");
-
-                cell.colSpan = 2;
-                cell.className = "empty";
-                cell.textContent = "No matching cache keys found yet.";
-
-                row.appendChild(cell);
-                rows.appendChild(row);
-
-                footerText.textContent = "No matching keys found.";
-                return;
-            }
-
-            for (const [key, value] of entries) {
-                const row = document.createElement("tr");
-                const keyCell = document.createElement("td");
-                const valueCell = document.createElement("td");
-
-                keyCell.textContent = key;
-                valueCell.textContent = formatValue(value);
-
-                row.appendChild(keyCell);
-                row.appendChild(valueCell);
-                rows.appendChild(row);
-            }
-
-            footerText.textContent = `${entries.length} matching cache keys found.`;
-        }
-
-        function requestData() {
-            send({ type: "getData" });
-        }
-
-        function buildCopyText() {
-            const entries = relevantEntries();
-            const lines = ["TT XP Cache Probe", ""];
-
-            if (!entries.length) {
-                lines.push("No matching cache keys found.");
-                return lines.join("\n");
-            }
-
-            for (const [key, value] of entries) {
-                lines.push(`${key}: ${formatValue(value)}`);
-            }
-
-            return lines.join("\n");
-        }
-
-        async function copyResults() {
-            const text = buildCopyText();
-            let copied = false;
-
-            try {
-                await navigator.clipboard.writeText(text);
-                copied = true;
-            } catch {}
-
-            if (!copied) {
-                copyArea.value = text;
-                copyArea.focus();
-                copyArea.select();
-
-                try {
-                    copied = document.execCommand("copy");
+                    return JSON.parse(raw);
                 } catch {}
             }
 
-            footerText.textContent = copied
-                ? "Results copied to clipboard."
-                : "Clipboard blocked. Take a screenshot of the table.";
+            return {};
+        }
+
+        function inventoryAmount(key) {
+            const item = state.inventory[key];
+
+            if (item === undefined || item === null) {
+                return 0;
+            }
+
+            if (typeof item === "object" && "amount" in item) {
+                return number(item.amount);
+            }
+
+            return number(item);
+        }
+
+        function bxpInfo() {
+            if (state.mode === "bear") {
+                return {
+                    key: "exp_token_a|hunting|skill",
+                    amount: inventoryAmount("exp_token_a|hunting|skill")
+                };
+            }
+
+            return {
+                key: "exp_token_a|farming|fishing",
+                amount: inventoryAmount("exp_token_a|farming|fishing")
+            };
+        }
+
+        function calculateFish(targetXp, current, xpBonus, usingBxp, availableBxp) {
+            const remaining = Math.max(targetXp - current, 0);
+            const fishPerSale = 10000;
+            const baseXpPerSale = 50;
+            const bxpUsedPerSale = 500;
+
+            if (remaining <= 0) {
+                return {
+                    xpRemaining: 0,
+                    resource: 0,
+                    totalBxp: 0,
+                    bxpNeeded: 0,
+                    units: 0
+                };
+            }
+
+            const xpNoBonus = baseXpPerSale * (1 + xpBonus / 100);
+            const xpWithBonus = xpNoBonus * 2;
+
+            const salesWithBonus = Math.floor(availableBxp / bxpUsedPerSale);
+            const xpCoveredByBonusSales = salesWithBonus * xpWithBonus;
+
+            let salesRemaining;
+
+            if (usingBxp && xpCoveredByBonusSales >= remaining) {
+                salesRemaining = Math.ceil(remaining / xpWithBonus);
+            } else if (usingBxp) {
+                const xpLeftAfterBonus = remaining - xpCoveredByBonusSales;
+                salesRemaining = salesWithBonus + Math.ceil(xpLeftAfterBonus / xpNoBonus);
+            } else {
+                salesRemaining = Math.ceil(remaining / xpNoBonus);
+            }
+
+            const salesIfAllBonus = Math.ceil(remaining / xpWithBonus);
+            const totalBxp = salesIfAllBonus * bxpUsedPerSale;
+
+            return {
+                xpRemaining: remaining,
+                resource: salesRemaining * fishPerSale,
+                totalBxp,
+                bxpNeeded: Math.max(totalBxp - availableBxp, 0),
+                units: salesRemaining
+            };
+        }
+
+        function calculateBear(targetXp, current, xpBonus, usingBxp, availableBxp) {
+            const remaining = Math.max(targetXp - current, 0);
+            const baseBearXp = 6;
+            const bxpUsedPerBear = 60;
+
+            if (remaining <= 0) {
+                return {
+                    xpRemaining: 0,
+                    resource: 0,
+                    totalBxp: 0,
+                    bxpNeeded: 0,
+                    units: 0
+                };
+            }
+
+            const xpNoBonus = baseBearXp * (1 + xpBonus / 100);
+            const xpWithBonus = xpNoBonus * 2;
+
+            const bearsWithBonus = Math.floor(availableBxp / bxpUsedPerBear);
+            const xpCoveredByBonusBears = bearsWithBonus * xpWithBonus;
+
+            let bearsRemaining;
+
+            if (usingBxp && xpCoveredByBonusBears >= remaining) {
+                bearsRemaining = Math.ceil(remaining / xpWithBonus);
+            } else if (usingBxp) {
+                const xpLeftAfterBonus = remaining - xpCoveredByBonusBears;
+                bearsRemaining = bearsWithBonus + Math.ceil(xpLeftAfterBonus / xpNoBonus);
+            } else {
+                bearsRemaining = Math.ceil(remaining / xpNoBonus);
+            }
+
+            const bearsIfAllBonus = Math.ceil(remaining / xpWithBonus);
+            const totalBxp = bearsIfAllBonus * bxpUsedPerBear;
+
+            return {
+                xpRemaining: remaining,
+                resource: bearsRemaining,
+                totalBxp,
+                bxpNeeded: Math.max(totalBxp - availableBxp, 0),
+                units: bearsRemaining
+            };
+        }
+
+        function recalc() {
+            const targetXp = number(target.value);
+            const current = number(currentXp.value);
+            const enteredBaseXp = Math.max(number(baseXp.value), 0);
+            const enteredSotd = Math.max(number(sotdBonus.value), 0);
+            const xpBonus = enteredBaseXp + enteredSotd;
+            const availableBxp = Math.max(number(bxpAvailable.value), 0);
+            const usingBxp = useBonus.checked;
+            const availableStock = Math.max(number(stock.value), 0);
+
+            const result = state.mode === "fish"
+                ? calculateFish(targetXp, current, xpBonus, usingBxp, availableBxp)
+                : calculateBear(targetXp, current, xpBonus, usingBxp, availableBxp);
+
+            xpRemainingEl.textContent = format(result.xpRemaining, result.xpRemaining % 1 ? 2 : 0);
+            resourceNeeded.textContent = format(result.resource);
+            totalBxpEl.textContent = format(result.totalBxp);
+            bxpNeededEl.textContent = format(result.bxpNeeded);
+            effectiveBonus.textContent = `${format(xpBonus, xpBonus % 1 ? 1 : 0)}%`;
+
+            const shortage = Math.max(result.resource - availableStock, 0);
+            stockShort.textContent = format(shortage);
+
+            if (state.mode === "fish") {
+                resourceSub.textContent = `${format(result.units)} sale${result.units === 1 ? "" : "s"} at 10,000 fish each.`;
+            } else {
+                resourceSub.textContent = "Bears required with your selected BXP usage.";
+            }
+
+            if (targetXp <= current) {
+                warning.style.display = "block";
+                warning.textContent = "You have already reached this target.";
+            } else if (xpBonus < 0) {
+                warning.style.display = "block";
+                warning.textContent = "XP bonus cannot be negative.";
+            } else {
+                warning.style.display = "none";
+            }
+        }
+
+        function applyMode(mode) {
+            state.mode = mode;
+
+            document.querySelectorAll(".tab").forEach(tab => {
+                tab.classList.toggle("active", tab.dataset.mode === mode);
+            });
+
+            const info = bxpInfo();
+
+            if (mode === "fish") {
+                currentXp.value = state.fishingXp || 0;
+                stockLabel.textContent = "Fish Available";
+                neededLabel.textContent = "Fish Remaining";
+                stockShortLabel.textContent = "Fish Still Needed After Stock";
+                modeInfo.textContent = "Fishing: 10,000 fish per sale";
+            } else {
+                currentXp.value = state.huntingXp || 0;
+                stockLabel.textContent = "Bears Available";
+                neededLabel.textContent = "Bears Remaining";
+                stockShortLabel.textContent = "Bears Still Needed After Stock";
+                modeInfo.textContent = "Hunting: 6 base XP per bear";
+            }
+
+            bxpAvailable.value = info.amount;
+            bxpKey.value = info.amount > 0 ? info.key : `${info.key} (not found)`;
+
+            recalc();
+        }
+
+        function requestData() {
+            send({
+                type: "getNamedData",
+                keys: [
+                    "inventory",
+                    "exp_hunting_skill",
+                    "exp_farming_fishing"
+                ]
+            });
         }
 
         window.addEventListener("message", event => {
@@ -341,33 +685,35 @@
                 return;
             }
 
-            let changed = false;
-
-            for (const [key, value] of Object.entries(evt.data)) {
-                values[key] = value;
-
-                if (isRelevantKey(key)) {
-                    changed = true;
-                }
+            if ("inventory" in evt.data) {
+                state.inventory = parseInventory(evt.data.inventory);
             }
 
-            if (changed || Object.keys(values).length) {
-                status.textContent = "Connected";
-                status.classList.add("connected");
-                render();
+            if ("exp_hunting_skill" in evt.data) {
+                state.huntingXp = number(evt.data.exp_hunting_skill);
             }
+
+            if ("exp_farming_fishing" in evt.data) {
+                state.fishingXp = number(evt.data.exp_farming_fishing);
+            }
+
+            connection.textContent = "Connected";
+            connection.classList.add("connected");
+            applyMode(state.mode);
+        });
+
+        document.querySelectorAll(".tab").forEach(tab => {
+            tab.addEventListener("click", () => applyMode(tab.dataset.mode));
+        });
+
+        [target, baseXp, sotdBonus, useBonus, stock].forEach(control => {
+            control.addEventListener("input", recalc);
+            control.addEventListener("change", recalc);
         });
 
         document.getElementById("refreshBtn").addEventListener("click", requestData);
-        document.getElementById("copyBtn").addEventListener("click", copyResults);
-
-        document.getElementById("pinBtn").addEventListener("click", () => {
-            send({ type: "pin" });
-        });
-
-        document.getElementById("closeBtn").addEventListener("click", () => {
-            send({ type: "close" });
-        });
+        document.getElementById("pinBtn").addEventListener("click", () => send({ type: "pin" }));
+        document.getElementById("closeBtn").addEventListener("click", () => send({ type: "close" }));
 
         window.addEventListener("keydown", event => {
             if (event.key === "Escape") {
@@ -375,8 +721,94 @@
             }
         });
 
+        let dragging = false;
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let appStartX = 0;
+        let appStartY = 0;
+
+        titlebar.addEventListener("mousedown", event => {
+            if (event.target.closest("button")) return;
+
+            dragging = true;
+            dragStartX = event.clientX;
+            dragStartY = event.clientY;
+            appStartX = app.offsetLeft;
+            appStartY = app.offsetTop;
+
+            event.preventDefault();
+        });
+
+        let resizing = false;
+        let resizeStartX = 0;
+        let resizeStartY = 0;
+        let resizeStartWidth = 0;
+        let resizeStartHeight = 0;
+
+        resizeHandle.addEventListener("mousedown", event => {
+            resizing = true;
+            resizeStartX = event.clientX;
+            resizeStartY = event.clientY;
+            resizeStartWidth = app.offsetWidth;
+            resizeStartHeight = app.offsetHeight;
+
+            event.preventDefault();
+            event.stopPropagation();
+        });
+
+        window.addEventListener("mousemove", event => {
+            if (dragging) {
+                const maxLeft = Math.max(window.innerWidth - app.offsetWidth, 0);
+                const maxTop = Math.max(window.innerHeight - app.offsetHeight, 0);
+
+                const nextLeft = Math.min(
+                    Math.max(appStartX + event.clientX - dragStartX, 0),
+                    maxLeft
+                );
+
+                const nextTop = Math.min(
+                    Math.max(appStartY + event.clientY - dragStartY, 0),
+                    maxTop
+                );
+
+                app.style.left = `${nextLeft}px`;
+                app.style.top = `${nextTop}px`;
+            }
+
+            if (resizing) {
+                const maxWidth = Math.max(window.innerWidth - app.offsetLeft, 520);
+                const maxHeight = Math.max(window.innerHeight - app.offsetTop, 430);
+
+                const nextWidth = Math.min(
+                    Math.max(resizeStartWidth + event.clientX - resizeStartX, 520),
+                    maxWidth
+                );
+
+                const nextHeight = Math.min(
+                    Math.max(resizeStartHeight + event.clientY - resizeStartY, 430),
+                    maxHeight
+                );
+
+                app.style.width = `${nextWidth}px`;
+                app.style.height = `${nextHeight}px`;
+            }
+        });
+
+        window.addEventListener("mouseup", () => {
+            dragging = false;
+            resizing = false;
+        });
+
+        window.addEventListener("resize", () => {
+            const maxLeft = Math.max(window.innerWidth - app.offsetWidth, 0);
+            const maxTop = Math.max(window.innerHeight - app.offsetHeight, 0);
+
+            app.style.left = `${Math.min(app.offsetLeft, maxLeft)}px`;
+            app.style.top = `${Math.min(app.offsetTop, maxTop)}px`;
+        });
+
         window.addEventListener("load", () => {
-            render();
+            applyMode("fish");
             setTimeout(requestData, 250);
         });
     </script>
