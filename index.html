@@ -6,16 +6,20 @@
     <title>TT XP Calculator</title>
     <style>
         :root {
-            --bg: #111318;
-            --panel: #1a1d24;
-            --panel-2: #21252e;
-            --border: #303640;
-            --text: #f2f4f7;
-            --muted: #959daa;
-            --blue: #5865f2;
-            --orange: #c47f2b;
-            --green: #69d391;
-            --danger: #e57373;
+            --bg: #0c1118;
+            --panel: #111923;
+            --panel-2: #0f1620;
+            --border: #263447;
+            --border-soft: #1d2938;
+            --text: #eef4fb;
+            --muted: #8f9bad;
+            --blue: #4d8dff;
+            --blue-2: #2f6ee8;
+            --orange: #f39a2d;
+            --green: #39d17d;
+            --purple: #b35cff;
+            --yellow: #f6ca32;
+            --red: #ff5d5d;
         }
 
         * {
@@ -29,248 +33,390 @@
             overflow: hidden;
             background: transparent;
             color: var(--text);
-            font-family: Arial, Helvetica, sans-serif;
+            font-family: Inter, Arial, Helvetica, sans-serif;
             user-select: none;
+        }
+
+        button,
+        input,
+        select {
+            font: inherit;
         }
 
         #app {
             position: fixed;
-            left: 60px;
-            top: 60px;
-            width: 690px;
-            height: 590px;
-            min-width: 520px;
-            min-height: 430px;
+            left: 40px;
+            top: 40px;
+            width: 980px;
+            height: 720px;
+            min-width: 760px;
+            min-height: 560px;
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 9px;
-            box-shadow: 0 14px 45px rgba(0, 0, 0, 0.5);
+            border: 1px solid #2f5fa6;
+            border-radius: 10px;
+            background:
+                radial-gradient(circle at top right, rgba(52, 104, 188, 0.12), transparent 34%),
+                linear-gradient(180deg, rgba(14, 21, 31, 0.98), rgba(8, 13, 20, 0.99));
+            box-shadow: 0 18px 55px rgba(0, 0, 0, 0.55);
         }
 
         #titlebar {
+            height: 58px;
+            flex-shrink: 0;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 12px;
-            padding: 10px 12px;
-            background: var(--panel);
-            border-bottom: 1px solid var(--border);
+            padding: 0 14px;
+            border-bottom: 1px solid var(--border-soft);
             cursor: move;
-            flex-shrink: 0;
+            background: rgba(14, 21, 31, 0.96);
         }
 
-        .title-wrap {
+        .brand {
             display: flex;
             align-items: center;
-            gap: 9px;
+            gap: 11px;
             min-width: 0;
         }
 
-        .title {
-            font-weight: 700;
-            white-space: nowrap;
+        .logo {
+            width: 30px;
+            height: 30px;
+            border-radius: 7px;
+            display: grid;
+            place-items: center;
+            font-weight: 900;
+            font-style: italic;
+            color: white;
+            background: linear-gradient(135deg, #4e93ff, #285ac0);
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
         }
 
-        #connection {
-            color: var(--muted);
-            font-size: 12px;
-            white-space: nowrap;
-        }
-
-        #connection.connected {
-            color: var(--green);
+        .brand-title {
+            font-size: 19px;
+            font-weight: 800;
+            letter-spacing: .01em;
         }
 
         .window-actions {
             display: flex;
-            gap: 7px;
+            gap: 8px;
         }
 
         button {
             border: 1px solid var(--border);
-            border-radius: 5px;
-            background: #292e38;
+            border-radius: 7px;
+            background: #182231;
             color: var(--text);
-            padding: 7px 10px;
-            font-weight: 600;
+            padding: 8px 13px;
+            font-weight: 700;
             cursor: pointer;
         }
 
         button:hover {
-            background: #353b47;
+            background: #202d3f;
         }
 
-        button:active {
-            transform: translateY(1px);
+        #closeBtn {
+            width: 46px;
+            color: white;
+            background: #9d2d2d;
+            border-color: #b43838;
+            font-size: 18px;
+        }
+
+        #closeBtn:hover {
+            background: #b33535;
+        }
+
+        #main {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            padding: 12px;
+            gap: 10px;
         }
 
         .tabs {
             display: flex;
-            padding: 10px 12px 0;
             gap: 8px;
-            background: var(--bg);
             flex-shrink: 0;
         }
 
         .tab {
-            min-width: 110px;
+            min-width: 170px;
+            padding: 11px 18px;
+            text-transform: uppercase;
+            letter-spacing: .03em;
+            background: #151e29;
         }
 
         .tab.active[data-mode="fish"] {
-            background: var(--blue);
-            border-color: var(--blue);
+            background: linear-gradient(180deg, #4b8fff, #2f6ee8);
+            border-color: #5c9aff;
         }
 
         .tab.active[data-mode="bear"] {
-            background: var(--orange);
-            border-color: var(--orange);
+            background: linear-gradient(180deg, #a86417, #73400d);
+            border-color: #c4781f;
+            color: #ffd29b;
         }
 
-        #content {
-            overflow: auto;
-            padding: 12px;
+        .workspace {
             flex: 1;
+            min-height: 0;
+            display: grid;
+            grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+            gap: 10px;
         }
 
-        .grid {
+        .column {
+            min-width: 0;
+            min-height: 0;
+            overflow: auto;
+            padding-right: 2px;
+        }
+
+        .panel {
+            border: 1px solid var(--border-soft);
+            border-radius: 8px;
+            background: rgba(17, 25, 35, 0.88);
+            padding: 13px;
+            margin-bottom: 10px;
+        }
+
+        .panel-title {
+            margin: 0 0 12px;
+            color: var(--blue);
+            font-weight: 800;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+        }
+
+        .auto-grid,
+        .input-grid,
+        .results-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 10px;
         }
 
-        .field,
+        .auto-card,
         .result-card {
-            background: var(--panel);
             border: 1px solid var(--border);
             border-radius: 7px;
-            padding: 10px;
+            background: rgba(11, 17, 25, .75);
+            padding: 12px;
         }
 
-        .field label,
-        .result-label {
+        .auto-label,
+        .result-label,
+        .field label {
             display: block;
-            margin-bottom: 6px;
-            color: var(--muted);
+            color: #b7c2d1;
             font-size: 12px;
             font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
+            margin-bottom: 7px;
+        }
+
+        .auto-value {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--blue);
+            overflow-wrap: anywhere;
+        }
+
+        .field {
+            min-width: 0;
         }
 
         input,
         select {
             width: 100%;
-            height: 36px;
-            padding: 7px 9px;
+            height: 38px;
             border: 1px solid var(--border);
-            border-radius: 5px;
-            background: #0d0f13;
+            border-radius: 6px;
+            background: #0c121a;
             color: var(--text);
-            font: inherit;
-            user-select: text;
+            padding: 8px 10px;
             outline: none;
+            user-select: text;
         }
 
         input:focus,
         select:focus {
-            border-color: #5c6675;
+            border-color: #4d7fbe;
         }
 
-        input[readonly] {
-            color: #c7ccd4;
-            background: #14171c;
+        .hint {
+            margin-top: 5px;
+            color: var(--muted);
+            font-size: 11px;
+            line-height: 1.35;
         }
 
-        .checkbox-row {
+        .toggle-wrap {
+            height: 38px;
             display: flex;
             align-items: center;
-            gap: 8px;
-            min-height: 36px;
         }
 
-        .checkbox-row input {
-            width: 18px;
-            height: 18px;
+        .toggle {
+            position: relative;
+            width: 80px;
+            height: 32px;
+            border-radius: 18px;
+            border: 1px solid #355f9d;
+            background: #182536;
+            cursor: pointer;
         }
 
-        .checkbox-row label {
-            margin: 0;
-            color: var(--text);
-            text-transform: none;
-            letter-spacing: 0;
-            font-size: 14px;
+        .toggle::before {
+            content: "";
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #eef4fb;
+            transition: .16s ease;
         }
 
-        .section-title {
-            margin: 16px 0 8px;
-            font-size: 13px;
-            color: var(--muted);
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
+        .toggle span {
+            position: absolute;
+            right: 12px;
+            top: 7px;
+            color: #aab5c4;
+            font-size: 12px;
+            font-weight: 800;
         }
 
-        .results {
+        .toggle.on {
+            background: linear-gradient(180deg, #4b8fff, #2f6ee8);
+        }
+
+        .toggle.on::before {
+            left: 51px;
+        }
+
+        .toggle.on span {
+            left: 12px;
+            right: auto;
+            color: white;
+        }
+
+        .actions {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: 1.4fr .8fr;
             gap: 10px;
         }
 
+        .primary {
+            background: linear-gradient(180deg, #4b8fff, #2f6ee8);
+            border-color: #5798ff;
+            font-size: 14px;
+        }
+
+        .secondary {
+            background: #252f3d;
+        }
+
+        .results-panel {
+            margin-bottom: 10px;
+        }
+
+        .result-card {
+            min-height: 105px;
+        }
+
         .result-value {
-            font-size: 20px;
-            font-weight: 700;
+            font-size: 22px;
+            font-weight: 900;
             overflow-wrap: anywhere;
         }
 
+        .blue { color: var(--blue); }
+        .purple { color: var(--purple); }
+        .green { color: var(--green); }
+        .orange { color: var(--orange); }
+        .yellow { color: var(--yellow); }
+        .red { color: var(--red); }
+
         .result-sub {
-            margin-top: 4px;
             color: var(--muted);
             font-size: 11px;
+            margin-top: 6px;
+            line-height: 1.4;
         }
 
-        #sotdNote {
-            margin-top: 10px;
-            padding: 9px 10px;
-            border-radius: 6px;
-            background: var(--panel-2);
-            color: var(--muted);
+        .details {
+            margin: 0;
+            padding-left: 18px;
+            color: #aab5c4;
             font-size: 12px;
-            line-height: 1.4;
+            line-height: 1.65;
         }
 
         #warning {
             display: none;
             margin-top: 10px;
-            padding: 9px 10px;
-            border: 1px solid rgba(229, 115, 115, 0.45);
+            padding: 8px 10px;
             border-radius: 6px;
-            color: #f0aaaa;
-            background: rgba(229, 115, 115, 0.08);
+            border: 1px solid rgba(255, 93, 93, .4);
+            background: rgba(255, 93, 93, .08);
+            color: #ff9d9d;
             font-size: 12px;
         }
 
         #footer {
+            height: 34px;
+            flex-shrink: 0;
+            padding: 0 14px;
             display: flex;
+            align-items: center;
             justify-content: space-between;
             gap: 12px;
-            padding: 8px 12px;
-            background: var(--panel);
-            border-top: 1px solid var(--border);
             color: var(--muted);
             font-size: 11px;
-            flex-shrink: 0;
+            border-top: 1px solid var(--border-soft);
+            background: rgba(10, 15, 22, .95);
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #596373;
+        }
+
+        .status.connected .dot {
+            background: var(--green);
+            box-shadow: 0 0 8px rgba(57, 209, 125, .55);
+        }
+
+        .status.connected #statusText {
+            color: #c7d2de;
         }
 
         #resizeHandle {
             position: absolute;
             right: 0;
             bottom: 0;
-            width: 20px;
-            height: 20px;
+            width: 22px;
+            height: 22px;
             cursor: nwse-resize;
+            z-index: 5;
         }
 
         #resizeHandle::after {
@@ -278,16 +424,19 @@
             position: absolute;
             right: 4px;
             bottom: 4px;
-            width: 8px;
-            height: 8px;
-            border-right: 2px solid #697180;
-            border-bottom: 2px solid #697180;
+            width: 10px;
+            height: 10px;
+            border-right: 2px solid #4f7db7;
+            border-bottom: 2px solid #4f7db7;
         }
 
-        @media (max-width: 620px) {
-            .grid,
-            .results {
+        @media (max-width: 840px) {
+            .workspace {
                 grid-template-columns: 1fr;
+            }
+
+            .tab {
+                min-width: 130px;
             }
         }
     </style>
@@ -295,120 +444,162 @@
 <body>
     <div id="app">
         <div id="titlebar">
-            <div class="title-wrap">
-                <span class="title">TT XP Calculator</span>
-                <span id="connection">Waiting for game data...</span>
+            <div class="brand">
+                <div class="logo">TT</div>
+                <div class="brand-title">TT XP Calculator</div>
             </div>
 
             <div class="window-actions">
-                <button id="refreshBtn">Refresh</button>
-                <button id="pinBtn">Pin</button>
-                <button id="closeBtn">Close</button>
+                <button id="pinBtn">📌 Pin</button>
+                <button id="closeBtn">×</button>
             </div>
         </div>
 
-        <div class="tabs">
-            <button class="tab active" data-mode="fish">🐟 Fishing</button>
-            <button class="tab" data-mode="bear">🐻 Hunting</button>
-        </div>
+        <div id="main">
+            <div class="tabs">
+                <button class="tab active" data-mode="fish">🐟 Fishing</button>
+                <button class="tab" data-mode="bear">🐻 Hunting (Bears)</button>
+            </div>
 
-        <div id="content">
-            <div class="grid">
-                <div class="field">
-                    <label for="target">Target</label>
-                    <select id="target">
-                        <option value="25250">Level 100 — 25,250 XP</option>
-                        <option value="1000000" selected>Level 632 — 1,000,000 XP</option>
-                        <option value="10000000">Level 2000 — 10,000,000 XP</option>
-                    </select>
-                </div>
+            <div class="workspace">
+                <div class="column">
+                    <div class="panel">
+                        <div class="panel-title">Automatic (from TT)</div>
 
-                <div class="field">
-                    <label for="currentXp">Current XP</label>
-                    <input id="currentXp" type="number" step="any" readonly>
-                </div>
+                        <div class="auto-grid">
+                            <div class="auto-card">
+                                <span class="auto-label" id="autoXpLabel">Current Fish XP</span>
+                                <div class="auto-value" id="currentXpDisplay">0</div>
+                            </div>
 
-                <div class="field">
-                    <label for="baseXp">Base XP Bonus %</label>
-                    <input id="baseXp" type="number" step="0.1" min="0" value="0">
-                </div>
+                            <div class="auto-card">
+                                <span class="auto-label" id="autoBxpLabel">Fishing BXP Available</span>
+                                <div class="auto-value" id="bxpDisplay">0</div>
+                            </div>
+                        </div>
+                    </div>
 
-                <div class="field">
-                    <label for="sotdBonus">SOTD Bonus %</label>
-                    <input id="sotdBonus" type="number" step="0.1" min="0" value="0">
-                </div>
+                    <div class="panel">
+                        <div class="panel-title">Inputs</div>
 
-                <div class="field">
-                    <label for="bxpAvailable">BXP Available</label>
-                    <input id="bxpAvailable" type="number" step="1" min="0" readonly>
-                </div>
+                        <div class="input-grid">
+                            <div class="field">
+                                <label for="target">Target</label>
+                                <select id="target">
+                                    <option value="25250">Level 100 — 25,250 XP</option>
+                                    <option value="1000000" selected>1M XP — Level 632</option>
+                                    <option value="10000000">10M XP — Level 2000</option>
+                                </select>
+                            </div>
 
-                <div class="field">
-                    <label>Bonus XP</label>
-                    <div class="checkbox-row">
-                        <input id="useBonus" type="checkbox" checked>
-                        <label for="useBonus">Use available BXP</label>
+                            <div class="field">
+                                <label>Use BXP?</label>
+                                <div class="toggle-wrap">
+                                    <div id="useBonusToggle" class="toggle on">
+                                        <span>Yes</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="field">
+                                <label for="baseXp">Base XP Bonus (%)</label>
+                                <input id="baseXp" type="number" step="0.1" min="0" value="0">
+                            </div>
+
+                            <div class="field">
+                                <label for="bxpOverride">BXP Amount (optional)</label>
+                                <input id="bxpOverride" type="number" step="1" min="0" placeholder="Use detected BXP">
+                                <div class="hint">Leave empty to use your detected BXP balance.</div>
+                            </div>
+
+                            <div class="field">
+                                <label for="sotdBonus">SOTD Bonus (%)</label>
+                                <input id="sotdBonus" type="number" step="0.1" min="0" value="0">
+                                <div class="hint" id="sotdHint">Add this only if Fishing is SOTD.</div>
+                            </div>
+
+                            <div class="field">
+                                <label id="stockLabel" for="stock">Fish You Currently Have</label>
+                                <input id="stock" type="number" step="1" min="0" value="0">
+                                <div class="hint" id="stockHint">Total fish you have in storage.</div>
+                            </div>
+                        </div>
+
+                        <div id="warning"></div>
+                    </div>
+
+                    <div class="actions">
+                        <button id="calculateBtn" class="primary">🧮 Calculate</button>
+                        <button id="resetBtn" class="secondary">↻ Reset</button>
                     </div>
                 </div>
 
-                <div class="field">
-                    <label id="stockLabel" for="stock">Fish Available</label>
-                    <input id="stock" type="number" step="1" min="0" value="0">
-                </div>
+                <div class="column">
+                    <div class="panel results-panel">
+                        <div class="panel-title">Results</div>
 
-                <div class="field">
-                    <label>Detected BXP Item</label>
-                    <input id="bxpKey" type="text" readonly value="Not found">
-                </div>
-            </div>
+                        <div class="results-grid">
+                            <div class="result-card">
+                                <span class="result-label">Target XP</span>
+                                <div class="result-value" id="targetResult">1,000,000</div>
+                            </div>
 
-            <div id="sotdNote">
-                SOTD is manual for now. Enter the SOTD percentage only if the current SOTD applies to the selected skill.
-            </div>
+                            <div class="result-card">
+                                <span class="result-label">Current XP</span>
+                                <div class="result-value blue" id="currentResult">0</div>
+                            </div>
 
-            <div id="warning"></div>
+                            <div class="result-card">
+                                <span class="result-label">XP Remaining</span>
+                                <div class="result-value purple" id="xpRemaining">0</div>
+                            </div>
 
-            <div class="section-title">Results</div>
+                            <div class="result-card">
+                                <span class="result-label" id="totalResourceLabel">Total Fish Needed</span>
+                                <div class="result-value blue" id="totalResource">0</div>
+                                <div class="result-sub" id="resourceSub"></div>
+                            </div>
 
-            <div class="results">
-                <div class="result-card">
-                    <span class="result-label">XP Remaining</span>
-                    <div class="result-value" id="xpRemaining">0</div>
-                </div>
+                            <div class="result-card">
+                                <span class="result-label" id="stillNeededLabel">Fish Still Needed</span>
+                                <div class="result-value green" id="stillNeeded">0</div>
+                                <div class="result-sub">After your current stock.</div>
+                            </div>
 
-                <div class="result-card">
-                    <span class="result-label" id="neededLabel">Fish Remaining</span>
-                    <div class="result-value" id="resourceNeeded">0</div>
-                    <div class="result-sub" id="resourceSub"></div>
-                </div>
+                            <div class="result-card">
+                                <span class="result-label">BXP Available</span>
+                                <div class="result-value orange" id="bxpResult">0</div>
+                            </div>
 
-                <div class="result-card">
-                    <span class="result-label">Total BXP Needed</span>
-                    <div class="result-value" id="totalBxp">0</div>
-                    <div class="result-sub">BXP required if the whole remaining grind used BXP.</div>
-                </div>
+                            <div class="result-card">
+                                <span class="result-label">Total BXP Needed</span>
+                                <div class="result-value yellow" id="totalBxp">0</div>
+                                <div class="result-sub">If using BXP for the full remaining grind.</div>
+                            </div>
 
-                <div class="result-card">
-                    <span class="result-label">BXP Still Needed</span>
-                    <div class="result-value" id="bxpNeeded">0</div>
-                </div>
+                            <div class="result-card">
+                                <span class="result-label">BXP Still Needed</span>
+                                <div class="result-value red" id="bxpNeeded">0</div>
+                            </div>
+                        </div>
+                    </div>
 
-                <div class="result-card">
-                    <span class="result-label" id="stockShortLabel">Fish Still Needed After Stock</span>
-                    <div class="result-value" id="stockShort">0</div>
-                </div>
-
-                <div class="result-card">
-                    <span class="result-label">Effective XP Bonus</span>
-                    <div class="result-value" id="effectiveBonus">0%</div>
-                    <div class="result-sub">Base XP plus the manual SOTD bonus.</div>
+                    <div class="panel">
+                        <div class="panel-title">Calculation Details</div>
+                        <ul class="details" id="detailsList"></ul>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div id="footer">
-            <span>Drag the title bar • resize from bottom-right</span>
-            <span id="modeInfo">Fishing: 10,000 fish per sale</span>
+            <div id="status" class="status">
+                <span class="dot"></span>
+                <span id="statusText">Waiting for game data...</span>
+            </div>
+
+            <span id="lastUpdated">Not updated yet</span>
+            <span>Created by CianK | TT Tools</span>
         </div>
 
         <div id="resizeHandle"></div>
@@ -418,32 +609,43 @@
         const app = document.getElementById("app");
         const titlebar = document.getElementById("titlebar");
         const resizeHandle = document.getElementById("resizeHandle");
-        const connection = document.getElementById("connection");
 
         const target = document.getElementById("target");
-        const currentXp = document.getElementById("currentXp");
         const baseXp = document.getElementById("baseXp");
         const sotdBonus = document.getElementById("sotdBonus");
-        const bxpAvailable = document.getElementById("bxpAvailable");
-        const useBonus = document.getElementById("useBonus");
+        const bxpOverride = document.getElementById("bxpOverride");
         const stock = document.getElementById("stock");
-        const stockLabel = document.getElementById("stockLabel");
-        const bxpKey = document.getElementById("bxpKey");
+        const toggle = document.getElementById("useBonusToggle");
 
+        const currentXpDisplay = document.getElementById("currentXpDisplay");
+        const bxpDisplay = document.getElementById("bxpDisplay");
+        const autoXpLabel = document.getElementById("autoXpLabel");
+        const autoBxpLabel = document.getElementById("autoBxpLabel");
+
+        const targetResult = document.getElementById("targetResult");
+        const currentResult = document.getElementById("currentResult");
         const xpRemainingEl = document.getElementById("xpRemaining");
-        const neededLabel = document.getElementById("neededLabel");
-        const resourceNeeded = document.getElementById("resourceNeeded");
+        const totalResourceLabel = document.getElementById("totalResourceLabel");
+        const totalResource = document.getElementById("totalResource");
         const resourceSub = document.getElementById("resourceSub");
+        const stillNeededLabel = document.getElementById("stillNeededLabel");
+        const stillNeeded = document.getElementById("stillNeeded");
+        const bxpResult = document.getElementById("bxpResult");
         const totalBxpEl = document.getElementById("totalBxp");
         const bxpNeededEl = document.getElementById("bxpNeeded");
-        const stockShortLabel = document.getElementById("stockShortLabel");
-        const stockShort = document.getElementById("stockShort");
-        const effectiveBonus = document.getElementById("effectiveBonus");
-        const modeInfo = document.getElementById("modeInfo");
+        const detailsList = document.getElementById("detailsList");
+
+        const stockLabel = document.getElementById("stockLabel");
+        const stockHint = document.getElementById("stockHint");
+        const sotdHint = document.getElementById("sotdHint");
         const warning = document.getElementById("warning");
+        const status = document.getElementById("status");
+        const statusText = document.getElementById("statusText");
+        const lastUpdated = document.getElementById("lastUpdated");
 
         const state = {
             mode: "fish",
+            useBxp: true,
             inventory: {},
             fishingXp: 0,
             huntingXp: 0
@@ -453,15 +655,14 @@
             window.parent.postMessage(payload, "*");
         }
 
-        function number(value, fallback = 0) {
+        function num(value, fallback = 0) {
             const parsed = Number(value);
             return Number.isFinite(parsed) ? parsed : fallback;
         }
 
-        function format(value, decimals = 0) {
-            return number(value).toLocaleString(undefined, {
-                minimumFractionDigits: decimals,
-                maximumFractionDigits: decimals
+        function fmt(value, maxDecimals = 3) {
+            return num(value).toLocaleString(undefined, {
+                maximumFractionDigits: maxDecimals
             });
         }
 
@@ -484,29 +685,28 @@
         function inventoryAmount(key) {
             const item = state.inventory[key];
 
-            if (item === undefined || item === null) {
-                return 0;
-            }
+            if (item === undefined || item === null) return 0;
 
             if (typeof item === "object" && "amount" in item) {
-                return number(item.amount);
+                return num(item.amount);
             }
 
-            return number(item);
+            return num(item);
         }
 
-        function bxpInfo() {
-            if (state.mode === "bear") {
-                return {
-                    key: "exp_token_a|hunting|skill",
-                    amount: inventoryAmount("exp_token_a|hunting|skill")
-                };
-            }
+        function detectedBxp() {
+            return state.mode === "bear"
+                ? inventoryAmount("exp_token_a|hunting|skill")
+                : inventoryAmount("exp_token_a|farming|fishing");
+        }
 
-            return {
-                key: "exp_token_a|farming|fishing",
-                amount: inventoryAmount("exp_token_a|farming|fishing")
-            };
+        function selectedBxp() {
+            const raw = bxpOverride.value.trim();
+            return raw === "" ? detectedBxp() : Math.max(num(raw), 0);
+        }
+
+        function currentXp() {
+            return state.mode === "bear" ? state.huntingXp : state.fishingXp;
         }
 
         function calculateFish(targetXp, current, xpBonus, usingBxp, availableBxp) {
@@ -516,18 +716,11 @@
             const bxpUsedPerSale = 500;
 
             if (remaining <= 0) {
-                return {
-                    xpRemaining: 0,
-                    resource: 0,
-                    totalBxp: 0,
-                    bxpNeeded: 0,
-                    units: 0
-                };
+                return { xpRemaining: 0, resource: 0, totalBxp: 0, bxpNeeded: 0, units: 0 };
             }
 
             const xpNoBonus = baseXpPerSale * (1 + xpBonus / 100);
             const xpWithBonus = xpNoBonus * 2;
-
             const salesWithBonus = Math.floor(availableBxp / bxpUsedPerSale);
             const xpCoveredByBonusSales = salesWithBonus * xpWithBonus;
 
@@ -560,18 +753,11 @@
             const bxpUsedPerBear = 60;
 
             if (remaining <= 0) {
-                return {
-                    xpRemaining: 0,
-                    resource: 0,
-                    totalBxp: 0,
-                    bxpNeeded: 0,
-                    units: 0
-                };
+                return { xpRemaining: 0, resource: 0, totalBxp: 0, bxpNeeded: 0, units: 0 };
             }
 
             const xpNoBonus = baseBearXp * (1 + xpBonus / 100);
             const xpWithBonus = xpNoBonus * 2;
-
             const bearsWithBonus = Math.floor(availableBxp / bxpUsedPerBear);
             const xpCoveredByBonusBears = bearsWithBonus * xpWithBonus;
 
@@ -599,42 +785,64 @@
         }
 
         function recalc() {
-            const targetXp = number(target.value);
-            const current = number(currentXp.value);
-            const enteredBaseXp = Math.max(number(baseXp.value), 0);
-            const enteredSotd = Math.max(number(sotdBonus.value), 0);
-            const xpBonus = enteredBaseXp + enteredSotd;
-            const availableBxp = Math.max(number(bxpAvailable.value), 0);
-            const usingBxp = useBonus.checked;
-            const availableStock = Math.max(number(stock.value), 0);
+            const targetXp = num(target.value);
+            const current = currentXp();
+            const xpBonus = Math.max(num(baseXp.value), 0) + Math.max(num(sotdBonus.value), 0);
+            const availableBxp = selectedBxp();
+            const currentStock = Math.max(num(stock.value), 0);
 
             const result = state.mode === "fish"
-                ? calculateFish(targetXp, current, xpBonus, usingBxp, availableBxp)
-                : calculateBear(targetXp, current, xpBonus, usingBxp, availableBxp);
+                ? calculateFish(targetXp, current, xpBonus, state.useBxp, availableBxp)
+                : calculateBear(targetXp, current, xpBonus, state.useBxp, availableBxp);
 
-            xpRemainingEl.textContent = format(result.xpRemaining, result.xpRemaining % 1 ? 2 : 0);
-            resourceNeeded.textContent = format(result.resource);
-            totalBxpEl.textContent = format(result.totalBxp);
-            bxpNeededEl.textContent = format(result.bxpNeeded);
-            effectiveBonus.textContent = `${format(xpBonus, xpBonus % 1 ? 1 : 0)}%`;
+            const shortage = Math.max(result.resource - currentStock, 0);
 
-            const shortage = Math.max(result.resource - availableStock, 0);
-            stockShort.textContent = format(shortage);
+            targetResult.textContent = fmt(targetXp, 0);
+            currentResult.textContent = fmt(current);
+            xpRemainingEl.textContent = fmt(result.xpRemaining);
+
+            totalResource.textContent = fmt(result.resource, 0);
+            stillNeeded.textContent = fmt(shortage, 0);
+
+            bxpResult.textContent = fmt(availableBxp, 0);
+            totalBxpEl.textContent = fmt(result.totalBxp, 0);
+            bxpNeededEl.textContent = fmt(result.bxpNeeded, 0);
 
             if (state.mode === "fish") {
-                resourceSub.textContent = `${format(result.units)} sale${result.units === 1 ? "" : "s"} at 10,000 fish each.`;
+                totalResourceLabel.textContent = "Total Fish Needed";
+                stillNeededLabel.textContent = "Fish Still Needed";
+                resourceSub.textContent = `${fmt(result.units, 0)} sale${result.units === 1 ? "" : "s"} of 10,000 fish`;
             } else {
-                resourceSub.textContent = "Bears required with your selected BXP usage.";
+                totalResourceLabel.textContent = "Total Bears Needed";
+                stillNeededLabel.textContent = "Bears Still Needed";
+                resourceSub.textContent = "Before deducting your current bear stock";
             }
 
             if (targetXp <= current) {
                 warning.style.display = "block";
                 warning.textContent = "You have already reached this target.";
-            } else if (xpBonus < 0) {
-                warning.style.display = "block";
-                warning.textContent = "XP bonus cannot be negative.";
             } else {
                 warning.style.display = "none";
+            }
+
+            updateDetails();
+        }
+
+        function updateDetails() {
+            if (state.mode === "fish") {
+                detailsList.innerHTML = `
+                    <li>Fish are sold in batches of 10,000</li>
+                    <li>Base XP per sale: 50 XP</li>
+                    <li>BXP per sale: 500 BXP</li>
+                    <li>BXP doubles the XP gained per sale</li>
+                `;
+            } else {
+                detailsList.innerHTML = `
+                    <li>Base XP per bear: 6 XP</li>
+                    <li>BXP per bear: 60 BXP</li>
+                    <li>BXP doubles the XP gained per bear</li>
+                    <li>Your current bear stock is deducted from the total required</li>
+                `;
             }
         }
 
@@ -645,24 +853,22 @@
                 tab.classList.toggle("active", tab.dataset.mode === mode);
             });
 
-            const info = bxpInfo();
-
             if (mode === "fish") {
-                currentXp.value = state.fishingXp || 0;
-                stockLabel.textContent = "Fish Available";
-                neededLabel.textContent = "Fish Remaining";
-                stockShortLabel.textContent = "Fish Still Needed After Stock";
-                modeInfo.textContent = "Fishing: 10,000 fish per sale";
+                autoXpLabel.textContent = "Current Fish XP";
+                autoBxpLabel.textContent = "Fishing BXP Available";
+                stockLabel.textContent = "Fish You Currently Have";
+                stockHint.textContent = "Total fish you have in storage.";
+                sotdHint.textContent = "Add this only if Fishing is SOTD.";
             } else {
-                currentXp.value = state.huntingXp || 0;
-                stockLabel.textContent = "Bears Available";
-                neededLabel.textContent = "Bears Remaining";
-                stockShortLabel.textContent = "Bears Still Needed After Stock";
-                modeInfo.textContent = "Hunting: 6 base XP per bear";
+                autoXpLabel.textContent = "Current Hunting XP";
+                autoBxpLabel.textContent = "Hunting BXP Available";
+                stockLabel.textContent = "Bears You Currently Have";
+                stockHint.textContent = "Total bears you have in storage.";
+                sotdHint.textContent = "Add this only if Hunting is SOTD.";
             }
 
-            bxpAvailable.value = info.amount;
-            bxpKey.value = info.amount > 0 ? info.key : `${info.key} (not found)`;
+            currentXpDisplay.textContent = fmt(currentXp());
+            bxpDisplay.textContent = fmt(detectedBxp(), 0);
 
             recalc();
         }
@@ -690,15 +896,19 @@
             }
 
             if ("exp_hunting_skill" in evt.data) {
-                state.huntingXp = number(evt.data.exp_hunting_skill);
+                state.huntingXp = num(evt.data.exp_hunting_skill);
             }
 
             if ("exp_farming_fishing" in evt.data) {
-                state.fishingXp = number(evt.data.exp_farming_fishing);
+                state.fishingXp = num(evt.data.exp_farming_fishing);
             }
 
-            connection.textContent = "Connected";
-            connection.classList.add("connected");
+            status.classList.add("connected");
+            statusText.textContent = "Game data connected";
+
+            const now = new Date();
+            lastUpdated.textContent = `Last updated: ${now.toLocaleTimeString()}`;
+
             applyMode(state.mode);
         });
 
@@ -706,12 +916,32 @@
             tab.addEventListener("click", () => applyMode(tab.dataset.mode));
         });
 
-        [target, baseXp, sotdBonus, useBonus, stock].forEach(control => {
+        toggle.addEventListener("click", () => {
+            state.useBxp = !state.useBxp;
+            toggle.classList.toggle("on", state.useBxp);
+            toggle.querySelector("span").textContent = state.useBxp ? "Yes" : "No";
+            recalc();
+        });
+
+        [target, baseXp, sotdBonus, bxpOverride, stock].forEach(control => {
             control.addEventListener("input", recalc);
             control.addEventListener("change", recalc);
         });
 
-        document.getElementById("refreshBtn").addEventListener("click", requestData);
+        document.getElementById("calculateBtn").addEventListener("click", recalc);
+
+        document.getElementById("resetBtn").addEventListener("click", () => {
+            target.value = "1000000";
+            baseXp.value = "0";
+            sotdBonus.value = "0";
+            bxpOverride.value = "";
+            stock.value = "0";
+            state.useBxp = true;
+            toggle.classList.add("on");
+            toggle.querySelector("span").textContent = "Yes";
+            recalc();
+        });
+
         document.getElementById("pinBtn").addEventListener("click", () => send({ type: "pin" }));
         document.getElementById("closeBtn").addEventListener("click", () => send({ type: "close" }));
 
@@ -735,7 +965,6 @@
             dragStartY = event.clientY;
             appStartX = app.offsetLeft;
             appStartY = app.offsetTop;
-
             event.preventDefault();
         });
 
@@ -751,7 +980,6 @@
             resizeStartY = event.clientY;
             resizeStartWidth = app.offsetWidth;
             resizeStartHeight = app.offsetHeight;
-
             event.preventDefault();
             event.stopPropagation();
         });
@@ -776,16 +1004,16 @@
             }
 
             if (resizing) {
-                const maxWidth = Math.max(window.innerWidth - app.offsetLeft, 520);
-                const maxHeight = Math.max(window.innerHeight - app.offsetTop, 430);
+                const maxWidth = Math.max(window.innerWidth - app.offsetLeft, 760);
+                const maxHeight = Math.max(window.innerHeight - app.offsetTop, 560);
 
                 const nextWidth = Math.min(
-                    Math.max(resizeStartWidth + event.clientX - resizeStartX, 520),
+                    Math.max(resizeStartWidth + event.clientX - resizeStartX, 760),
                     maxWidth
                 );
 
                 const nextHeight = Math.min(
-                    Math.max(resizeStartHeight + event.clientY - resizeStartY, 430),
+                    Math.max(resizeStartHeight + event.clientY - resizeStartY, 560),
                     maxHeight
                 );
 
@@ -809,7 +1037,8 @@
 
         window.addEventListener("load", () => {
             applyMode("fish");
-            setTimeout(requestData, 250);
+            requestData();
+            setInterval(requestData, 60000);
         });
     </script>
 </body>
